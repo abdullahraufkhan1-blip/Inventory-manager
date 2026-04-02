@@ -1203,6 +1203,7 @@ const firebaseConfig = {
 
 const app  = initializeApp(firebaseConfig);
 const db   = getFirestore(app);
+window._firestore = db;
 const auth = getAuth(app);
 const itemsCol = collection(db,"items");
 const logCol   = collection(db,"auditLog");
@@ -1248,6 +1249,8 @@ onAuthStateChanged(auth, async user => {
     // Always start listeners and render dashboard regardless of role
     loadAlertSettings();
     startListeners();
+    // Always start on dashboard
+    switchTab('dash');
   } else {
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app-shell').style.display='none';
@@ -1328,6 +1331,7 @@ window.doLogin = async function(){
       };
       setSyncState('live');
       renderAll();renderRM();renderTool();renderDashboard();renderLog();
+      switchTab('dash');
       return;
     } else {
       err.textContent='Invalid username or password.'; return;
@@ -1664,11 +1668,15 @@ window.renderLog=function(){
 };
 
 window.switchTab=function(name){
-  ['dash','all','rm','tool','log','scrap','reports','calc','admin'].forEach((n,i)=>{
-    const tabs=document.querySelectorAll('.tab');
-    if(tabs[i]) tabs[i].classList.toggle('active',n===name);
+  // Activate correct panel
+  ['dash','all','rm','tool','log','scrap','reports','calc','admin'].forEach(n=>{
     const p=document.getElementById('tab-'+n);
     if(p) p.classList.toggle('active',n===name);
+  });
+  // Activate correct nav-tab button by matching its onclick
+  document.querySelectorAll('.nav-tab').forEach(btn=>{
+    const fn=btn.getAttribute('onclick')||'';
+    btn.classList.toggle('active', fn.includes("'"+name+"'"));
   });
   if(name==='calc'){calcSheet();calcRod();}
 };
@@ -2332,6 +2340,9 @@ window.switchTab=function(name){
   if(name==='scrap') renderScrap();
   if(name==='dash')  renderDashboard();
   if(name==='log')   renderLog();
+  if(name==='rm')    renderRM();
+  if(name==='tool')  renderTool();
+  if(name==='all')   renderAll();
 };
 
 
@@ -2721,6 +2732,7 @@ function fmtShort(n){
 window.seedFirestore = async function(){
   const btn = document.getElementById('btn-seed');
   const status = document.getElementById('seed-status');
+  if(!window._firestore){showToast('Not connected to Firebase');return;}
   btn.disabled = true;
   btn.textContent = 'Importing…';
 
