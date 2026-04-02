@@ -1223,11 +1223,15 @@ onAuthStateChanged(auth, async user => {
   if(user){
     let role='operator';
     let displayName=user.email.replace('@jidoka.local',''); // strip domain → show username
+    // Hardcoded admin accounts (email format: username@jidoka.local)
+    const ADMIN_EMAILS=['ark21@jidoka.local'];
+    if(ADMIN_EMAILS.includes(user.email)) role='admin';
     try{
+      // Also check Firestore users collection (for users created via Admin tab)
       const uSnap = await getDocs(collection(db,'users'));
       uSnap.forEach(d=>{
         if(d.data().email===user.email){
-          role=d.data().role||'operator';
+          role=d.data().role||role; // Firestore overrides hardcoded if found
           if(d.data().username) displayName=d.data().username;
         }
       });
@@ -1530,7 +1534,7 @@ function renderStats(id,list){
 }
 function showToast(msg){ const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400); }
 function isAdmin(){    return window._currentUser?.role==='admin'; }
-function isOperator(){ return window._currentUser?.role==='operator'; }
+function isOperator(){ return !isAdmin(); }  // everyone who is NOT admin is treated as operator
 
 function actionBtns(i){
   const editDel=isAdmin()?`<button class="action-link" onclick="openEdit('${i.id}')">Edit</button> <button class="action-link danger" onclick="deleteItem('${i.id}','${i.name.replace(/'/g,"\\'")}',${i.qty})">Del</button>`:'<span style="font-size:11px;color:var(--text3)">—</span>';
