@@ -1247,10 +1247,9 @@ onAuthStateChanged(auth, async user => {
     if(_addRM)   _addRM.style.display   = role==='operator' ? 'none' : '';
     if(_addTool) _addTool.style.display = role==='operator' ? 'none' : '';
     // Always start listeners and render dashboard regardless of role
-    loadAlertSettings();
+    // loadAlertSettings only for admin (has those DOM fields)
+    if(role==='admin') loadAlertSettings();
     startListeners();
-    // Always start on dashboard
-    switchTab('dash');
   } else {
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app-shell').style.display='none';
@@ -1331,7 +1330,8 @@ window.doLogin = async function(){
       };
       setSyncState('live');
       renderAll();renderRM();renderTool();renderDashboard();renderLog();
-      switchTab('dash');
+      // Switch to dashboard after all renders
+      setTimeout(()=>{ if(window.switchTab) window.switchTab('dash'); }, 50);
       return;
     } else {
       err.textContent='Invalid username or password.'; return;
@@ -1350,6 +1350,7 @@ function _addLocalLog(action,itemName,delta,before,after,note,itemId){
 }
 
 window.doLogout = async function(){
+  window._initialTabSet = false;
   // clear demo session if active
   window._currentUser=null;
   window._localItems=null;
@@ -1368,7 +1369,18 @@ function startListeners(){
   onSnapshot(itemsCol, snap=>{
     items=snap.docs.map(d=>({id:d.id,...d.data()}));
     setSyncState('live');
-    window.renderAll(); window.renderRM(); window.renderTool(); if(window.renderDashboard) window.renderDashboard(); if(window.renderLog) window.renderLog();
+    // Use setTimeout to ensure second script block has fully executed
+    setTimeout(()=>{
+      if(window.renderAll) window.renderAll();
+      if(window.renderRM) window.renderRM();
+      if(window.renderTool) window.renderTool();
+      if(window.renderDashboard) window.renderDashboard();
+      if(window.renderLog) window.renderLog();
+      if(!window._initialTabSet){
+        window._initialTabSet=true;
+        if(window.switchTab) window.switchTab('dash');
+      }
+    }, 100);
   }, ()=>setSyncState('error'));
   const logQ=query(logCol,orderBy('ts','desc'),limit(500));
   onSnapshot(logQ, snap=>{
@@ -1398,10 +1410,12 @@ async function loadAlertSettings(){
   try{
     const snap=await getDocs(collection(db,'settings'));
     snap.forEach(d=>{ if(d.id==='alertConfig') Object.assign(alertConfig,d.data()); });
-    document.getElementById('alert-emails').value=alertConfig.emails||'';
-    document.getElementById('ejs-service').value=alertConfig.serviceId||'';
-    document.getElementById('ejs-template').value=alertConfig.templateId||'';
-    document.getElementById('ejs-pubkey').value=alertConfig.pubKey||'';
+    // Only update admin panel fields if they exist (admin only)
+    const f=id=>document.getElementById(id);
+    if(f('alert-emails')) f('alert-emails').value=alertConfig.emails||'';
+    if(f('ejs-service'))  f('ejs-service').value=alertConfig.serviceId||'';
+    if(f('ejs-template')) f('ejs-template').value=alertConfig.templateId||'';
+    if(f('ejs-pubkey'))   f('ejs-pubkey').value=alertConfig.pubKey||'';
   }catch(e){}
 }
 window.saveAlertSettings=async function(){
@@ -2732,7 +2746,8 @@ function fmtShort(n){
 window.seedFirestore = async function(){
   const btn = document.getElementById('btn-seed');
   const status = document.getElementById('seed-status');
-  if(!window._firestore){showToast('Not connected to Firebase');return;}
+  if(!window._firestore){showToast('Not connected to Firebase. You must be logged in as admin on the deployed app.');return;}
+  if(!confirm('This will add 50 items to Firestore. Only run once. Continue?')) return;
   btn.disabled = true;
   btn.textContent = 'Importing…';
 
@@ -2740,14 +2755,18 @@ window.seedFirestore = async function(){
 
   let count = 0;
   const errors = [];
+  // Import using Firestore SDK directly (works on deployed app)
+  const {collection:col2, addDoc:addDoc2} = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+  const itemsCollection = col2(window._firestore, 'items');
   for(const item of seedItems){
     try{
       const {id,...data} = item;
-      await window._db.addItem({...data, _seeded:true});
+      await addDoc2(itemsCollection, data);
       count++;
       status.textContent = `${count}/${seedItems.length} imported…`;
     }catch(e){
       errors.push(item.name+': '+e.message);
+      console.error('Seed error for '+item.name+':', e);
     }
   }
 
