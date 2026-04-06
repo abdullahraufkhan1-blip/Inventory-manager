@@ -365,8 +365,8 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
       </div>
     </div>
     <div class="login-sub">Sign in to access the inventory management system.</div>
-    <div class="login-field"><label>Username</label><input type="text" id="login-username" placeholder="Enter username" value="ark21" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
-    <div class="login-field"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" value="Root@123" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-field"><label>Username</label><input type="text" id="login-username" placeholder="Enter username" value="" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div class="login-field"><label>Password</label><input type="password" id="login-pass" placeholder="••••••••" value="" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
     <button class="login-btn" onclick="doLogin()">Sign In</button>
     <div class="login-error" id="login-error"></div>
     <div class="login-role-note">Contact your admin to create or reset your account.</div>
@@ -1293,12 +1293,8 @@ window.doLogin = async function(){
   err.textContent='';
   if(!username){err.textContent='Please enter your username.';return;}
 
-  // ── DEMO BYPASS (works in Claude preview & local testing) ──
-  // Hardcoded users: no Firebase needed for these credentials
-  const DEMO_USERS={
-    'ark21':  {password:'Root@123', role:'admin'},
-    'operator1': {password:'Op@1234', role:'operator'},
-  };
+  // ── DEMO BYPASS (only active for Claude preview — no real users listed) ──
+  const DEMO_USERS={};  // Empty — all logins go through Firebase
   if(DEMO_USERS[username.toLowerCase()]){
     const u=DEMO_USERS[username.toLowerCase()];
     if(pass===u.password){
@@ -1387,8 +1383,8 @@ window.doLogout = async function(){
   window._localLogs=null;
   document.getElementById('login-screen').style.display='flex';
   document.getElementById('app-shell').style.display='none';
-  document.getElementById('login-username').value='ark21';
-  document.getElementById('login-pass').value='Root@123';
+  document.getElementById('login-username').value='';
+  document.getElementById('login-pass').value='';
   // also sign out of Firebase if logged in
   try{ await signOut(auth); }catch(e){}
 };
