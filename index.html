@@ -780,11 +780,21 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
       <button class="btn btn-primary" onclick="adminCreateUser()" style="margin-bottom:6px">Create User in Firebase</button>
       <div style="font-size:11px;color:var(--text3);margin-bottom:16px">Username stored as username@jidoka.local in Firebase Auth.</div>
       <div class="section-sep"></div>
-      <div style="font-size:13px;font-weight:600;margin:14px 0 6px">💰 Material Price Management (Rs/kg)</div>
+      <div style="font-size:13px;font-weight:600;margin:14px 0 6px">💰 Material Price Management</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Changes apply to new items added via the wizard. Existing item prices are not affected.</div>
       <table class="price-table">
         <thead><tr><th>Material Type</th><th>Specification</th><th>Price (Rs/kg)</th></tr></thead>
         <tbody id="price-mgmt-tbody"></tbody>
+      </table>
+      <div style="font-size:13px;font-weight:600;margin:16px 0 6px">🔲 Extrusion Profile Prices (Rs/bar at 3000mm)</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Priced per bar — not per kg. Each bar is 3000mm long.</div>
+      <table class="price-table">
+        <thead><tr><th>Profile</th><th>Weight/bar</th><th>Price (Rs/bar)</th></tr></thead>
+        <tbody>
+          <tr><td><b>20×40 mm</b></td><td style="color:var(--text2)">2.08 kg</td><td><input type="number" id="ext-price-20x40" placeholder="0" min="0"></td></tr>
+          <tr><td><b>40×40 mm</b></td><td style="color:var(--text2)">4.13 kg</td><td><input type="number" id="ext-price-40x40" placeholder="0" min="0"></td></tr>
+          <tr><td><b>40×80 mm</b></td><td style="color:var(--text2)">7.85 kg</td><td><input type="number" id="ext-price-40x80" placeholder="0" min="0"></td></tr>
+        </tbody>
       </table>
       <button class="btn btn-primary" onclick="savePrices()" style="margin-top:12px;margin-bottom:20px">Save All Prices</button>
       <div class="section-sep"></div>
@@ -983,6 +993,22 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
             <div class="form-group"><label>Diameter — ø (mm)</label><input type="number" id="w-dia" placeholder="e.g. 25" min="0" step="any" oninput="wizCalcWeight()"></div>
             <div class="form-group"><label>Length (mm)</label><input type="number" id="w-rod-length" placeholder="e.g. 1000" min="0" step="any" oninput="wizCalcWeight()"></div>
             <div class="form-group span-full"><label>Quantity (pcs)</label><input type="number" id="w-qty-rod" value="1" min="1" style="max-width:120px" oninput="wizCalcWeight()"></div>
+          </div>
+        </div>
+        <!-- Extrusion dims -->
+        <div id="wiz-dims-ext" style="display:none">
+          <div style="font-size:12px;color:var(--text2);margin-bottom:10px">Weights are based on actual manufacturer specs — 3000mm bar length.</div>
+          <div class="form-grid" style="margin-bottom:10px">
+            <div class="form-group span-full">
+              <label>Profile Size</label>
+              <select id="w-ext-profile" onchange="wizCalcWeight()" style="font-size:13px;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);width:100%">
+                <option value="">— Select profile —</option>
+                <option value="20x40">20 × 40 mm — 2.08 kg/bar</option>
+                <option value="40x40">40 × 40 mm — 4.13 kg/bar</option>
+                <option value="40x80">40 × 80 mm — 7.85 kg/bar</option>
+              </select>
+            </div>
+            <div class="form-group span-full"><label>Quantity (bars)</label><input type="number" id="w-qty-ext" value="1" min="1" style="max-width:120px" oninput="wizCalcWeight()"></div>
           </div>
         </div>
         <!-- Auto weight + cost -->
@@ -2029,9 +2055,26 @@ window._matPrices = {
   'Teflon|Teflon (>250 Degree)':       1500,
   'Teflon|Teflon (<250 Degree)':       1200,
   'Brass|As per Market Availability':  3800,
+  // Extrusion profiles (Rs per bar)
+  'Extrusion|20x40': 0,
+  'Extrusion|40x40': 0,
+  'Extrusion|40x80': 0,
 };
 
 // Densities (kg/m³)
+// Extrusion profile weights (kg per 3000mm bar) — actual manufacturer weights
+window.EXTRUSION_WEIGHTS = {
+  '20x40': 2.08,
+  '40x40': 4.13,
+  '40x80': 7.85,
+};
+// Extrusion profile labels for display
+window.EXTRUSION_LABELS = {
+  '20x40': '20×40',
+  '40x40': '40×40',
+  '40x80': '40×80',
+};
+
 window.MAT_DENSITY = {
   'Mild Steel (MS)':              7860,
   'Stainless Steel (SS 201)':    7860,
@@ -2072,6 +2115,11 @@ async function loadPrices(){
 }
 
 function renderPriceTable(){
+  // Populate extrusion price fields
+  ['20x40','40x40','40x80'].forEach(p=>{
+    const el=document.getElementById('ext-price-'+p.replace('x','-'));
+    if(el) el.value = window._matPrices['Extrusion|'+p]||0;
+  });
   const tbody = document.getElementById('price-mgmt-tbody');
   if(!tbody) return;
   tbody.innerHTML = Object.entries(window._matPrices).map(([k,v])=>{
@@ -2085,6 +2133,11 @@ function renderPriceTable(){
 }
 
 window.savePrices = async function(){
+  // Save extrusion prices
+  ['20x40','40x40','40x80'].forEach(p=>{
+    const el=document.getElementById('ext-price-'+p.replace('x','-'));
+    if(el) window._matPrices['Extrusion|'+p] = +el.value||0;
+  });
   Object.keys(window._matPrices).forEach(k=>{
     const el = document.getElementById('price_'+k.replace(/[^a-zA-Z0-9]/g,'_'));
     if(el) window._matPrices[k] = +el.value || 0;
@@ -2211,100 +2264,128 @@ function buildCatStep(){
 }
 
 function buildDimStep(){
-  const isSheet = wizState.category==='T';
+  const isExt   = wizState.formation==='Extrusion Profile';
+  const isSheet = !isExt && wizState.category==='T';
+  const isRod   = !isExt && wizState.category==='ø';
   document.getElementById('wiz-dims-sheet').style.display = isSheet?'block':'none';
-  document.getElementById('wiz-dims-rod').style.display   = isSheet?'none':'block';
+  document.getElementById('wiz-dims-rod').style.display   = isRod  ?'block':'none';
+  document.getElementById('wiz-dims-ext').style.display   = isExt  ?'block':'none';
   const spec = wizState.matSpec||'';
   const form = wizState.formation||'';
-  const cat  = wizState.category==='T'?'Thickness':'Diameter';
+  const cat  = isExt?'Profile':wizState.category==='T'?'Thickness':'Diameter';
   document.getElementById('wiz-dim-title').textContent = `${spec} — ${form} — ${cat}`;
   // clear fields
   ['w-thickness','w-length','w-width','w-qty-sheet','w-dia','w-rod-length','w-qty-rod','w-loc','w-minstock','w-notes']
     .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=id.includes('qty')?'1':''; });
+  const extSel = document.getElementById('w-ext-profile');
+  if(extSel) extSel.value='';
+  const extQty = document.getElementById('w-qty-ext');
+  if(extQty) extQty.value='1';
   wizCalcWeight();
 }
 
 window.wizCalcWeight = function(){
-  const spec = wizState.matSpec||'';
+  const spec      = wizState.matSpec||'';
   const formation = wizState.formation||'';
-  const rho  = formation==='Extrusion Profile' ? 1200 : (MAT_DENSITY[spec] || 7860);
-  const priceKey = `${wizState.matType}|${spec}`;
-  const priceKg  = window._matPrices[priceKey] || 0;
-  const isSheet  = wizState.category==='T';
+  const isExt     = formation==='Extrusion Profile';
+  const isSheet   = !isExt && wizState.category==='T';
 
-  let unitWt=0, totalWt=0, qty=1;
-  if(isSheet){
-    const T  = +document.getElementById('w-thickness')?.value||0;
-    const L  = +document.getElementById('w-length')?.value||0;
-    const W  = +document.getElementById('w-width')?.value||0;
-    qty      = +document.getElementById('w-qty-sheet')?.value||1;
-    // Weight = T(mm) * L(mm) * W(mm) * 10^-9 * density
-    unitWt   = T * L * W * 1e-9 * rho;
+  let unitWt=0, totalWt=0, qty=1, priceKg=0, cost=0;
+
+  if(isExt){
+    const profile = document.getElementById('w-ext-profile')?.value||'';
+    qty     = +document.getElementById('w-qty-ext')?.value||1;
+    unitWt  = profile ? (window.EXTRUSION_WEIGHTS[profile]||0) : 0;
+    priceKg = profile ? (window._matPrices['Extrusion|'+profile]||0) : 0;
+    totalWt = unitWt * qty;
+    cost    = priceKg * qty; // price per bar, not per kg
+    document.getElementById('wc-unit-wt').textContent  = unitWt>0 ? unitWt.toFixed(3)+' kg/bar' : '—';
+    document.getElementById('wc-total-wt').textContent = totalWt>0 ? totalWt.toFixed(3)+' kg' : '—';
+    document.getElementById('wc-price-kg').textContent = priceKg>0 ? 'Rs '+priceKg.toLocaleString('en-PK')+'/bar' : '—';
+    document.getElementById('wc-cost').textContent     = cost>0 ? 'Rs '+cost.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,',') : '—';
   } else {
-    const D  = +document.getElementById('w-dia')?.value||0;
-    const L  = +document.getElementById('w-rod-length')?.value||0;
-    qty      = +document.getElementById('w-qty-rod')?.value||1;
-    // Weight = π * (D/2)^2 * L * 10^-9 * density  (all mm → m³ via 1e-9)
-    unitWt   = 3.14 * D * D * L * rho * 1e-9 / 4;  // matches Excel formula exactly
+    const rho  = MAT_DENSITY[spec] || 7860;
+    priceKg    = window._matPrices[`${wizState.matType}|${spec}`] || 0;
+    if(isSheet){
+      const T  = +document.getElementById('w-thickness')?.value||0;
+      const L  = +document.getElementById('w-length')?.value||0;
+      const W  = +document.getElementById('w-width')?.value||0;
+      qty      = +document.getElementById('w-qty-sheet')?.value||1;
+      unitWt   = T * L * W * 1e-9 * rho;
+    } else {
+      const D  = +document.getElementById('w-dia')?.value||0;
+      const L  = +document.getElementById('w-rod-length')?.value||0;
+      qty      = +document.getElementById('w-qty-rod')?.value||1;
+      unitWt   = 3.14 * D * D * L * rho * 1e-9 / 4;
+    }
+    totalWt = unitWt * qty;
+    cost    = totalWt * priceKg;
+    document.getElementById('wc-unit-wt').textContent  = unitWt>0 ? unitWt.toFixed(4)+' kg' : '—';
+    document.getElementById('wc-total-wt').textContent = totalWt>0 ? totalWt.toFixed(4)+' kg' : '—';
+    document.getElementById('wc-price-kg').textContent = priceKg>0 ? 'Rs '+priceKg.toLocaleString('en-PK')+'/kg' : '—';
+    document.getElementById('wc-cost').textContent     = cost>0 ? 'Rs '+cost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',') : '—';
   }
-  totalWt = unitWt * qty;
-  const cost = totalWt * priceKg;
-
-  document.getElementById('wc-unit-wt').textContent  = unitWt>0 ? unitWt.toFixed(4)+' kg' : '—';
-  document.getElementById('wc-total-wt').textContent = totalWt>0 ? totalWt.toFixed(4)+' kg' : '—';
-  document.getElementById('wc-price-kg').textContent = priceKg>0 ? 'Rs '+priceKg.toLocaleString('en-PK') : '—';
-  document.getElementById('wc-cost').textContent     = cost>0 ? 'Rs '+cost.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,',') : '—';
 };
 
 window.wizSave = async function(){
-  const spec     = wizState.matSpec||'';
-  const isSheet  = wizState.category==='T';
+  const spec      = wizState.matSpec||'';
   const formation = wizState.formation||'';
-  const rho      = formation==='Extrusion Profile' ? 1200 : (MAT_DENSITY[spec] || 7860);
-  const priceKey = `${wizState.matType}|${spec}`;
-  const priceKg  = window._matPrices[priceKey] || 0;
+  const isExt     = formation==='Extrusion Profile';
+  const isSheet   = !isExt && wizState.category==='T';
 
-  let T=0,L=0,W=0,D=0,qty=1,unitWt=0;
-  if(isSheet){
-    T   = +document.getElementById('w-thickness')?.value||0;
-    L   = +document.getElementById('w-length')?.value||0;
-    W   = +document.getElementById('w-width')?.value||0;
-    qty = +document.getElementById('w-qty-sheet')?.value||1;
-    unitWt = T * L * W * 1e-9 * rho;
+  let T=0,L=0,W=0,D=0,qty=1,unitWt=0,priceKg=0,pricePc=0,autoName='',extProfile='';
+
+  if(isExt){
+    extProfile = document.getElementById('w-ext-profile')?.value||'';
+    qty        = +document.getElementById('w-qty-ext')?.value||1;
+    if(!extProfile){showToast('Please select a profile size');return;}
+    unitWt  = window.EXTRUSION_WEIGHTS[extProfile]||0;
+    priceKg = 0; // extrusions priced per bar not per kg
+    pricePc = window._matPrices['Extrusion|'+extProfile]||0;
+    const label = window.EXTRUSION_LABELS[extProfile]||extProfile;
+    autoName = `${spec} Extrusion Profile ${label} × L3000mm`;
   } else {
-    D   = +document.getElementById('w-dia')?.value||0;
-    L   = +document.getElementById('w-rod-length')?.value||0;
-    qty = +document.getElementById('w-qty-rod')?.value||1;
-    unitWt = 3.14 * D * D * L * rho * 1e-9 / 4;  // matches Excel
+    const rho  = MAT_DENSITY[spec] || 7860;
+    priceKg    = window._matPrices[`${wizState.matType}|${spec}`] || 0;
+    if(isSheet){
+      T   = +document.getElementById('w-thickness')?.value||0;
+      L   = +document.getElementById('w-length')?.value||0;
+      W   = +document.getElementById('w-width')?.value||0;
+      qty = +document.getElementById('w-qty-sheet')?.value||1;
+      unitWt = T * L * W * 1e-9 * rho;
+    } else {
+      D   = +document.getElementById('w-dia')?.value||0;
+      L   = +document.getElementById('w-rod-length')?.value||0;
+      qty = +document.getElementById('w-qty-rod')?.value||1;
+      unitWt = 3.14 * D * D * L * rho * 1e-9 / 4;
+    }
+    pricePc  = +unitWt.toFixed(6) * priceKg;
+    autoName = isSheet ? `${spec} Sheet T${T} × ${L} × ${W}mm` : `${spec} Rod Ø${D} × L${L}mm`;
   }
+
   if(qty<1){showToast('Enter a valid quantity');return;}
 
-  // Build item name automatically
-  let sizing = isSheet
-    ? `T${T} × ${L} × ${W}mm`
-    : `Ø${D} × L${L}mm`;
-  const autoName = `${spec} ${wizState.formation} ${sizing}`;
-
   const data = {
-    name:      autoName,
-    type:      'rm',
-    cat:       `${wizState.matType} — ${spec}`,
-    matType:   wizState.matType,
-    matSpec:   spec,
-    formation: wizState.formation,
-    category:  wizState.category,
-    // dimensions
-    thickness: T||null, length: L||null, width: W||null, diameter: D||null,
+    name:       autoName,
+    type:       'rm',
+    cat:        `${wizState.matType} — ${spec}`,
+    matType:    wizState.matType,
+    matSpec:    spec,
+    formation,
+    category:   isExt ? 'T' : wizState.category,
+    extProfile: extProfile||null,
+    thickness:  T||null, length: isExt?3000:(L||null), width: isExt?null:(W||null), diameter: D||null,
     qty,
-    unit:      'pcs',
-    uwt:       +unitWt.toFixed(6),
-    price:     +unitWt.toFixed(6) * priceKg,   // price per piece
-    priceKg,
-    grade:     spec,
-    condition: 'Good',
-    loc:       document.getElementById('w-loc')?.value.trim()||'',
-    minstock:  +document.getElementById('w-minstock')?.value||0,
-    notes:     document.getElementById('w-notes')?.value.trim()||'',
+    unit:       'pcs',
+    uwt:        +unitWt.toFixed(6),
+    price:      +pricePc.toFixed(2),
+    priceKg:    isExt ? 0 : priceKg,
+    pricePc:    isExt ? pricePc : 0,
+    grade:      spec,
+    condition:  'Good',
+    loc:        document.getElementById('w-loc')?.value.trim()||'',
+    minstock:   +document.getElementById('w-minstock')?.value||0,
+    notes:      document.getElementById('w-notes')?.value.trim()||'',
   };
 
   try{
