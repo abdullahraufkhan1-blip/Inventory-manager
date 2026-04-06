@@ -1246,41 +1246,47 @@ function usernameToEmail(u){ return u.trim().toLowerCase()+'@jidoka.local'; }
 
 // AUTH
 onAuthStateChanged(auth, async user => {
-  if(user){
-    let role='operator';
-    let displayName=user.email.replace('@jidoka.local',''); // strip domain → show username
-    // Hardcoded admin accounts (email format: username@jidoka.local)
-    const ADMIN_EMAILS=['ark21@jidoka.local'];
-    if(ADMIN_EMAILS.includes(user.email)) role='admin';
-    try{
-      // Also check Firestore users collection (for users created via Admin tab)
-      const uSnap = await getDocs(collection(db,'users'));
-      uSnap.forEach(d=>{
-        if(d.data().email===user.email){
-          role=d.data().role||role; // Firestore overrides hardcoded if found
-          if(d.data().username) displayName=d.data().username;
-        }
-      });
-    }catch(e){}
-    window._currentUser={email:user.email,username:displayName,role};
-    document.getElementById('login-screen').style.display='none';
-    document.getElementById('app-shell').style.display='block';
-    document.getElementById('user-email-display').textContent=displayName;
-    const _av=document.getElementById('user-avatar-initials');
-    if(_av) _av.textContent=displayName.slice(0,2).toUpperCase();
-    const rb=document.getElementById('user-role-badge');
-    rb.textContent=role; rb.className='role-badge role-'+role;
-    // Only hide Add buttons and Admin tab — everything else visible to all roles
-    document.getElementById('tab-admin-btn').style.display = role==='admin' ? '' : 'none';
-    const _addRM   = document.getElementById('btn-add-item');
-    const _addTool = document.getElementById('btn-add-tool');
-    if(_addRM)   _addRM.style.display   = role==='operator' ? 'none' : '';
-    if(_addTool) _addTool.style.display = role==='operator' ? 'none' : '';
-    // Always start listeners and render dashboard regardless of role
-    // loadAlertSettings only for admin (has those DOM fields)
-    if(role==='admin') loadAlertSettings();
-    startListeners();
-  } else {
+  try{
+    if(user){
+      let role='operator';
+      let displayName=user.email.replace('@jidoka.local','');
+      // Hardcoded admin accounts
+      const ADMIN_EMAILS=['ark21@jidoka.local'];
+      if(ADMIN_EMAILS.includes(user.email)) role='admin';
+      try{
+        const uSnap = await getDocs(collection(db,'users'));
+        uSnap.forEach(d=>{
+          if(d.data().email===user.email){
+            role=d.data().role||role;
+            if(d.data().username) displayName=d.data().username;
+          }
+        });
+      }catch(e){ console.warn('Could not read users collection:',e.message); }
+
+      window._currentUser={email:user.email,username:displayName,role};
+      document.getElementById('login-screen').style.display='none';
+      document.getElementById('app-shell').style.display='block';
+      document.getElementById('user-email-display').textContent=displayName;
+      const _av=document.getElementById('user-avatar-initials');
+      if(_av) _av.textContent=displayName.slice(0,2).toUpperCase();
+      const rb=document.getElementById('user-role-badge');
+      rb.textContent=role; rb.className='role-badge role-'+role;
+
+      // Show/hide UI elements based on role
+      document.getElementById('tab-admin-btn').style.display = role==='admin' ? '' : 'none';
+      const _addRM   = document.getElementById('btn-add-item');
+      const _addTool = document.getElementById('btn-add-tool');
+      if(_addRM)   _addRM.style.display   = role==='admin' ? '' : 'none';
+      if(_addTool) _addTool.style.display = role==='admin' ? '' : 'none';
+
+      if(role==='admin') loadAlertSettings();
+      startListeners();
+    } else {
+      document.getElementById('login-screen').style.display='flex';
+      document.getElementById('app-shell').style.display='none';
+    }
+  }catch(e){
+    console.error('Auth state error:',e);
     document.getElementById('login-screen').style.display='flex';
     document.getElementById('app-shell').style.display='none';
   }
@@ -1729,17 +1735,19 @@ window.renderLog=function(){
 };
 
 window.switchTab=function(name){
-  // Activate correct panel
-  ['dash','all','rm','tool','log','scrap','reports','calc','admin'].forEach(n=>{
-    const p=document.getElementById('tab-'+n);
-    if(p) p.classList.toggle('active',n===name);
-  });
-  // Activate correct nav-tab button by matching its onclick
-  document.querySelectorAll('.nav-tab').forEach(btn=>{
-    const fn=btn.getAttribute('onclick')||'';
-    btn.classList.toggle('active', fn.includes("'"+name+"'"));
-  });
-  if(name==='calc'){calcSheet();calcRod();}
+  try{
+    // Activate correct panel
+    ['dash','all','rm','tool','log','scrap','reports','calc','admin'].forEach(n=>{
+      const p=document.getElementById('tab-'+n);
+      if(p) p.classList.toggle('active',n===name);
+    });
+    // Activate correct nav-tab button by matching its onclick
+    document.querySelectorAll('.nav-tab').forEach(btn=>{
+      const fn=btn.getAttribute('onclick')||'';
+      btn.classList.toggle('active', fn.includes("'"+name+"'"));
+    });
+    if(name==='calc' && window.calcSheet){ calcSheet(); calcRod(); }
+  }catch(e){ console.error('switchTab error:',e); }
 };
 
 // ─── QUICK ACTION — dimension-based weight calculation ───
