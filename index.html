@@ -2418,7 +2418,7 @@ window.wizSave = async function(){
     showToast(`${autoName} added ✓`);
     closeDrawer('overlay-item');
   }catch(e){
-    alert('Save failed: '+e.message+\`\n\nMake sure Firestore rules allow writes:\nallow read, write: if request.auth != null;\`);
+    alert('Save failed: '+e.message+'\n\nMake sure Firestore rules allow writes:\nallow read, write: if request.auth != null;');
   }
 };
 
