@@ -332,6 +332,23 @@ tr.ms-teflon  td:first-child{border-left:3px solid #8b5cf6}   /* Teflon — purp
 tr.ms-brass   td:first-child{border-left:3px solid #d97706}   /* Brass — orange */
 tr.ms-iron    td:first-child{border-left:3px solid #64748b}   /* GI — slate */
 tr.ms-tool    td:first-child{border-left:3px solid #16a34a}   /* Tooling — green */
+/* Ready-to-Fit category row stripes */
+tr.rtf-pneumatic   td:first-child{border-left:3px solid #0891b2}
+tr.rtf-linear      td:first-child{border-left:3px solid #7c3aed}
+tr.rtf-power       td:first-child{border-left:3px solid #d97706}
+tr.rtf-fastener    td:first-child{border-left:3px solid #64748b}
+tr.rtf-electronics td:first-child{border-left:3px solid #16a34a}
+tr.rtf-structural  td:first-child{border-left:3px solid #ea580c}
+tr.rtf-programmable td:first-child{border-left:3px solid #dc2626}
+/* RTF category pills */
+.rtf-pill{display:inline-flex;align-items:center;font-size:10px;padding:2px 8px;border-radius:20px;font-weight:600;white-space:nowrap}
+.rp-pneumatic{background:#e0f2fe;color:#0c4a6e}
+.rp-linear{background:#ede9fe;color:#4c1d95}
+.rp-power{background:#fef3c7;color:#78350f}
+.rp-fastener{background:#f1f5f9;color:#334155}
+.rp-electronics{background:#dcfce7;color:#14532d}
+.rp-structural{background:#ffedd5;color:#7c2d12}
+.rp-programmable{background:#fee2e2;color:#7f1d1d}
 /* Tooling category row stripes */
 tr.tc-cutting    td:first-child{border-left:3px solid #dc2626}
 tr.tc-measuring  td:first-child{border-left:3px solid #0891b2}
@@ -404,6 +421,9 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
       <button class="btn-add-rm" id="btn-add-tool" onclick="openAddTool()" style="background:#16a34a">
         <span style="font-size:15px;line-height:1">+</span> Add Tooling
       </button>
+      <button class="btn-add-rm" id="btn-add-rtf" onclick="openAddRTF()" style="background:#7c3aed">
+        <span style="font-size:15px;line-height:1">+</span> Add RTF Item
+      </button>
     </div>
   </div>
 
@@ -416,6 +436,7 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
       <button class="nav-tab" onclick="switchTab('all')"><span class="tab-icon">≡</span> All Items</button>
       <button class="nav-tab" onclick="switchTab('rm')"><span class="tab-icon">⬡</span> Raw Materials</button>
       <button class="nav-tab" onclick="switchTab('tool')"><span class="tab-icon">⚙</span> Tooling</button>
+      <button class="nav-tab" onclick="switchTab('rtf')"><span class="tab-icon">⬢</span> RTF Items</button>
       <button class="nav-tab" onclick="switchTab('log')"><span class="tab-icon">⊙</span> Audit Log</button>
       <button class="nav-tab" onclick="switchTab('scrap')"><span class="tab-icon">⊗</span> Scrap Log</button>
       <button class="nav-tab" onclick="switchTab('reports')"><span class="tab-icon">▤</span> Reports</button>
@@ -583,6 +604,42 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
             <th>Condition</th><th>Location</th><th>Actions</th>
           </tr></thead>
           <tbody id="tbody-tool"><tr class="empty-row"><td colspan="9">No tooling items. Click + Add Tooling to get started.</td></tr></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- READY-TO-FIT ITEMS -->
+    <div id="tab-rtf" class="panel">
+      <div class="stats-grid" id="stats-rtf"></div>
+      <div class="content-card">
+        <div class="card-header">
+          <div class="card-title">⬢ Ready-to-Fit Items</div>
+          <div class="filter-bar" style="margin:0;flex:1;justify-content:flex-end">
+            <input type="text" id="search-rtf" placeholder="Search name, spec, location…" oninput="renderRTF()" style="max-width:200px">
+            <select id="filter-rtf-cat" onchange="renderRTF()">
+              <option value="">All categories</option>
+              <option value="Pneumatic">Pneumatic</option>
+              <option value="Linear Motion">Linear Motion</option>
+              <option value="Power Transmission">Power Transmission</option>
+              <option value="Fasteners">Fasteners</option>
+              <option value="Electronics">Electronics</option>
+              <option value="Structural">Structural</option>
+              <option value="Programmable">Programmable</option>
+            </select>
+            <select id="filter-rtf-stock" onchange="renderRTF()">
+              <option value="">All stock</option>
+              <option value="low">⚠ Low stock</option>
+              <option value="ok">In stock</option>
+            </select>
+          </div>
+        </div>
+        <div class="tbl-wrap"><table>
+          <thead><tr>
+            <th>Item / Description</th><th>Sub-type</th><th>Spec / Size</th>
+            <th>Qty (pcs)</th><th>Min Stock</th><th>Unit Price (Rs)</th>
+            <th>Total Value (Rs)</th><th>Location</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="tbody-rtf"><tr class="empty-row"><td colspan="9">No RTF items. Click + Add RTF Item to get started.</td></tr></tbody>
         </table></div>
       </div>
     </div>
@@ -778,7 +835,7 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
         <div class="form-group"><label>Role</label><select id="admin-new-role"><option value="operator">Operator</option><option value="admin">Admin</option></select></div>
       </div>
       <button class="btn btn-primary" onclick="adminCreateUser()" style="margin-bottom:6px">Create User in Firebase</button>
-      <div style="font-size:11px;color:var(--text3);margin-bottom:16px">Username stored as username@jidoka.local in Firebase Auth.</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:16px">Username stored as <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="671214021509060a02270d0e03080c06490b0804060b">[email&#160;protected]</a> in Firebase Auth.</div>
       <div class="section-sep"></div>
       <div style="font-size:13px;font-weight:600;margin:14px 0 6px">💰 Material Price Management</div>
       <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Changes apply to new items added via the wizard. Existing item prices are not affected.</div>
@@ -819,6 +876,82 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
 
   </div><!-- /app-body -->
 </div><!-- /app-shell -->
+
+<!-- ADD RTF WIZARD -->
+<div class="overlay center" id="overlay-rtf" onclick="if(event.target===this)closeDrawer('overlay-rtf')">
+  <div style="background:var(--surface);border-radius:var(--r-xl);width:100%;max-width:500px;max-height:92vh;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--border2);box-shadow:0 20px 60px rgba(0,0,0,0.15)" onclick="event.stopPropagation()">
+    <div style="padding:18px 20px 12px;flex-shrink:0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:var(--text)">Add Ready-to-Fit Item</div>
+        <button class="action-link" onclick="closeDrawer('overlay-rtf')">✕</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <div class="wiz-step-dot active" id="rdot1">1</div>
+        <div class="wiz-step-line"></div>
+        <div class="wiz-step-dot" id="rdot2">2</div>
+        <div class="wiz-step-line"></div>
+        <div class="wiz-step-dot" id="rdot3">3</div>
+        <span style="margin-left:10px;font-size:11px;color:var(--text3)" id="rwiz-step-label">Step 1 of 3</span>
+      </div>
+      <div class="wiz-summary" id="rwiz-summary" style="display:none;margin-top:8px"></div>
+    </div>
+    <div style="padding:18px 20px;overflow-y:auto;flex:1">
+
+      <!-- STEP 1: Category -->
+      <div id="rwiz-s1">
+        <div class="wiz-q">What category of item?</div>
+        <div class="wiz-options">
+          <button class="wiz-opt" onclick="rwizPick('category','Pneumatic',this)">💨 Pneumatic Components<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">Pistons, cylinders, valves, fittings, pipes, solenoids</span></button>
+          <button class="wiz-opt" onclick="rwizPick('category','Linear Motion',this)">↔ Linear Motion<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">Rails, slides, bearings, lead screws, shafts</span></button>
+          <button class="wiz-opt" onclick="rwizPick('category','Power Transmission',this)">⚙ Power Transmission<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">Belts, pulleys, chains, sprockets, couplings</span></button>
+          <button class="wiz-opt" onclick="rwizPick('category','Fasteners',this)">🔩 Fasteners<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">Bolts, nuts, washers, L-keys, screws, rivets</span></button>
+          <button class="wiz-opt" onclick="rwizPick('category','Electronics',this)">⚡ Electronics<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">Sensors, switches, relays, connectors, cables, drivers</span></button>
+          <button class="wiz-opt" onclick="rwizPick('category','Structural',this)">📐 Structural<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">Brackets, plates, profiles, clamps, hinges</span></button>
+          <button class="wiz-opt" onclick="rwizPick('category','Programmable',this)">💻 Programmable Components<span style="font-size:11px;color:var(--text3);display:block;font-weight:400">PLCs, HMIs, microcontrollers, servo drives, VFDs</span></button>
+        </div>
+      </div>
+
+      <!-- STEP 2: Sub-type -->
+      <div id="rwiz-s2" style="display:none">
+        <div class="wiz-q">Select sub-type</div>
+        <div class="wiz-options" id="rwiz-subtype-opts"></div>
+      </div>
+
+      <!-- STEP 3: Details -->
+      <div id="rwiz-s3" style="display:none">
+        <div class="wiz-q">Item details</div>
+        <div class="form-grid">
+          <div class="form-group span-full"><label>Item Name *</label><input type="text" id="r-name" placeholder="e.g. SMC Cylinder CDJ2B16-75" oninput="updateRTFPreview()"></div>
+          <div class="form-group span-full"><label>Spec / Size</label><input type="text" id="r-spec" placeholder="e.g. Bore 16mm, Stroke 75mm" oninput="updateRTFPreview()"></div>
+          <div class="form-group"><label>Quantity (pcs) *</label><input type="number" id="r-qty" value="1" min="1"></div>
+          <div class="form-group"><label>Min Stock (pcs)</label><input type="number" id="r-minstock" value="0" min="0"></div>
+          <div class="form-group"><label>Unit Price (Rs)</label><input type="number" id="r-price" value="0" min="0"></div>
+          <div class="form-group"><label>Condition</label>
+            <select id="r-condition">
+              <option>New</option><option>Good</option><option>Used</option><option>Damaged</option>
+            </select>
+          </div>
+          <div class="form-group span-full"><label>Location / Bin / Shelf</label><input type="text" id="r-loc" placeholder="e.g. Cabinet 3, Bin B4"></div>
+          <div class="form-group span-full"><label>Notes (optional)</label><input type="text" id="r-notes" placeholder="supplier, part number, etc."></div>
+        </div>
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 13px;margin-top:12px;font-size:12px">
+          <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Will be saved as</div>
+          <div style="font-weight:600;color:var(--text)" id="r-preview-name">—</div>
+        </div>
+      </div>
+
+    </div>
+    <div style="padding:12px 20px 18px;display:flex;justify-content:space-between;border-top:1px solid var(--border);flex-shrink:0">
+      <button class="btn" id="rwiz-back-btn" onclick="rwizBack()" style="display:none">← Back</button>
+      <div style="flex:1"></div>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="closeDrawer('overlay-rtf')">Cancel</button>
+        <button class="btn btn-primary" id="rwiz-next-btn" onclick="rwizNext()" disabled>Next →</button>
+        <button class="btn btn-primary" id="rwiz-save-btn" onclick="rwizSave()" style="display:none;background:var(--purple)">✓ Save Item</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ADD TOOLING WIZARD -->
 <div class="overlay center" id="overlay-tool" onclick="if(event.target===this)closeDrawer('overlay-tool')">
@@ -1213,7 +1346,7 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
 <div class="toast" id="toast"></div>
 
 <!-- FIREBASE -->
-<script type="module">
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, query, orderBy, limit, getDocs, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -1321,6 +1454,8 @@ window.doLogin = async function(){
       adminTab.style.display = u.role==='admin' ? '' : 'none';
       if(addBtn)  addBtn.style.display  = u.role==='operator' ? 'none' : '';
       if(addTool) addTool.style.display = u.role==='operator' ? 'none' : '';
+      const addRTF = document.getElementById('btn-add-rtf');
+      if(addRTF) addRTF.style.display = u.role==='operator' ? 'none' : '';
       // boot with in-memory sample data (no Firebase in Claude sandbox)
       window._getItems=()=>window._localItems||[];
       window._getLogs=()=>window._localLogs||[];
@@ -1361,7 +1496,7 @@ window.doLogin = async function(){
         }
       };
       setSyncState('live');
-      renderAll();renderRM();renderTool();renderDashboard();renderLog();
+      renderAll();renderRM();renderTool();renderRTF();renderDashboard();renderLog();
       // Switch to dashboard after all renders
       setTimeout(()=>{ if(window.switchTab) window.switchTab('dash'); }, 50);
       return;
@@ -1612,7 +1747,7 @@ window.renderAll=function(){
     const ms=!st||(st==='low'?stockLevel(i).low:!stockLevel(i).low);
     return mq&&mm&&mf&&mt&&ms;
   });
-  renderStats('stats-all',list);
+  renderStats('stats-all',list);  // includes rm, tool, rtf
   document.getElementById('tbody-all').innerHTML=f.length?f.map(i=>{
     const rc=specRowClass(i);
     const [spClass,spLabel]=i.type==='rm'?specPillClass(i):['ms-tool','Tool'];
@@ -1737,7 +1872,7 @@ window.renderLog=function(){
 window.switchTab=function(name){
   try{
     // Activate correct panel
-    ['dash','all','rm','tool','log','scrap','reports','calc','admin'].forEach(n=>{
+    ['dash','all','rm','tool','rtf','log','scrap','reports','calc','admin'].forEach(n=>{
       const p=document.getElementById('tab-'+n);
       if(p) p.classList.toggle('active',n===name);
     });
@@ -2468,6 +2603,7 @@ window.switchTab=function(name){
   if(name==='log')   renderLog();
   if(name==='rm')    renderRM();
   if(name==='tool')  renderTool();
+  if(name==='rtf')   renderRTF();
   if(name==='all')   renderAll();
 };
 
@@ -2894,6 +3030,278 @@ window.seedFirestore = async function(){
   }
 };
 
+// ═══════════════════════════════════════════
+// READY-TO-FIT (RTF) ITEMS
+// ═══════════════════════════════════════════
+
+const RTF_SUBTYPES = {
+  'Pneumatic':         ['Pneumatic Cylinder','Pneumatic Piston','Solenoid Valve','Manual Valve','Air Filter/Regulator','Pneumatic Fitting','Pneumatic Pipe/Tube','Vacuum Cup/Generator','Pressure Gauge','Flow Control Valve','Quick Connect','Other Pneumatic'],
+  'Linear Motion':     ['Linear Rail (MGN/HGR)','Linear Slide/Carriage','Ball Bearing','Pillow Block Bearing','Lead Screw','Ball Screw','Shaft','Shaft Support','Linear Bushing','Slider Block','Other Linear Motion'],
+  'Power Transmission':['Timing Belt','V-Belt','Timing Pulley','V-Belt Pulley','Roller Chain','Sprocket','Coupling (Rigid)','Coupling (Flexible)','Gear','Rack & Pinion','Idler Pulley','Other Power Transmission'],
+  'Fasteners':         ['Hex Bolt','Socket Head Cap Screw','Set Screw','Machine Screw','Hex Nut','Lock Nut','T-Nut','Washer','Spring Washer','Allen Key / L-Key','Rivet','Threaded Rod','Other Fastener'],
+  'Electronics':       ['Proximity Sensor','Photoelectric Sensor','Limit Switch','Push Button','Toggle Switch','Relay','Contactor','Power Supply','Stepper Driver','Servo Driver','VFD (Inverter)','Cable/Wire','Connector','Terminal Block','Fuse','Circuit Breaker','Other Electronics'],
+  'Structural':        ['L-Bracket','Flat Plate','Angle Bracket','Hinge','Clamp','Profile Connector','T-Slot Nut','End Cap','Cable Drag Chain','DIN Rail','Panel Mount','Other Structural'],
+  'Programmable':      ['PLC (Programmable Logic Controller)','HMI (Touch Panel)','Arduino','Raspberry Pi','ESP32/ESP8266','Servo Controller','Stepper Controller','SCADA Module','I/O Expansion Module','Communication Module (RS485/Modbus)','Other Programmable'],
+};
+
+function rtfCatKey(cat){
+  const m={
+    'Pneumatic':'pneumatic','Linear Motion':'linear','Power Transmission':'power',
+    'Fasteners':'fastener','Electronics':'electronics','Structural':'structural','Programmable':'programmable'
+  };
+  return m[cat]||'fastener';
+}
+function rtfPillClass(cat){
+  const m={
+    'Pneumatic':['rp-pneumatic','Pneumatic'],
+    'Linear Motion':['rp-linear','Linear'],
+    'Power Transmission':['rp-power','Power Trans.'],
+    'Fasteners':['rp-fastener','Fastener'],
+    'Electronics':['rp-electronics','Electronics'],
+    'Structural':['rp-structural','Structural'],
+    'Programmable':['rp-programmable','Programmable'],
+  };
+  return m[cat]||['rp-fastener',cat||'RTF'];
+}
+
+// ── RTF Wizard state ──────────────────────────────────────────────────
+let rwizState = {};
+
+window.openAddRTF = function(){
+  if(!isAdmin()){showToast('Admins only');return;}
+  rwizState = {step:1, category:null, subtype:null};
+  rwizGoStep(1);
+  document.getElementById('overlay-rtf').classList.add('open');
+};
+
+function rwizGoStep(n){
+  rwizState.step = n;
+  for(let i=1;i<=3;i++){
+    const el=document.getElementById('rwiz-s'+i);
+    if(el) el.style.display = i===n?'block':'none';
+    const dot=document.getElementById('rdot'+i);
+    if(dot){ dot.classList.toggle('active',i===n); dot.classList.toggle('done',i<n); }
+  }
+  document.getElementById('rwiz-step-label').textContent = `Step ${n} of 3`;
+  document.getElementById('rwiz-back-btn').style.display  = n>1?'inline-block':'none';
+  document.getElementById('rwiz-next-btn').style.display  = n<3?'inline-block':'none';
+  document.getElementById('rwiz-save-btn').style.display  = n===3?'inline-block':'none';
+  document.getElementById('rwiz-next-btn').disabled = !rwizStepValid(n);
+  const sumEl = document.getElementById('rwiz-summary');
+  if(n>1){
+    const parts=[];
+    if(rwizState.category) parts.push(`<b>${rwizState.category}</b>`);
+    if(rwizState.subtype)  parts.push(rwizState.subtype);
+    sumEl.innerHTML=parts.join(' › '); sumEl.style.display='block';
+  } else { sumEl.style.display='none'; }
+  if(n===2) buildRSubtype();
+  if(n===3) initRDetails();
+}
+
+function rwizStepValid(n){
+  if(n===1) return !!rwizState.category;
+  if(n===2) return !!rwizState.subtype;
+  return true;
+}
+
+window.rwizPick = function(field, value, btn){
+  rwizState[field] = value;
+  btn.parentElement.querySelectorAll('.wiz-opt').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('rwiz-next-btn').disabled = false;
+};
+
+window.rwizNext = function(){
+  if(!rwizStepValid(rwizState.step)) return;
+  rwizGoStep(rwizState.step+1);
+};
+window.rwizBack = function(){ if(rwizState.step>1) rwizGoStep(rwizState.step-1); };
+
+function buildRSubtype(){
+  const opts = RTF_SUBTYPES[rwizState.category]||[];
+  document.getElementById('rwiz-subtype-opts').innerHTML = opts.map(s=>
+    `<button class="wiz-opt${rwizState.subtype===s?' selected':''}" onclick="rwizPick('subtype','${s.replace(/'/g,"\'")}',this)">${s}</button>`
+  ).join('');
+  document.getElementById('rwiz-next-btn').disabled = !rwizState.subtype;
+}
+
+function initRDetails(){
+  const el=id=>document.getElementById(id);
+  el('r-name').value=''; el('r-spec').value=''; el('r-qty').value='1';
+  el('r-minstock').value='0'; el('r-price').value='0';
+  el('r-condition').value='New'; el('r-loc').value=''; el('r-notes').value='';
+  updateRTFPreview();
+}
+
+window.updateRTFPreview = function(){
+  const name = document.getElementById('r-name')?.value.trim()||'';
+  const spec = document.getElementById('r-spec')?.value.trim()||'';
+  const el   = document.getElementById('r-preview-name');
+  if(el) el.textContent = name ? (spec ? name+' — '+spec : name) : '—';
+};
+
+window.rwizSave = async function(){
+  const name  = document.getElementById('r-name')?.value.trim();
+  const spec  = document.getElementById('r-spec')?.value.trim()||'';
+  const qty   = +document.getElementById('r-qty')?.value||1;
+  const min   = +document.getElementById('r-minstock')?.value||0;
+  const price = +document.getElementById('r-price')?.value||0;
+  const cond  = document.getElementById('r-condition')?.value||'New';
+  const loc   = document.getElementById('r-loc')?.value.trim()||'';
+  const notes = document.getElementById('r-notes')?.value.trim()||'';
+
+  if(!name){showToast('Please enter an item name');return;}
+  if(qty<1){showToast('Enter a valid quantity');return;}
+
+  const data = {
+    name:        name + (spec ? ' — '+spec : ''),
+    type:        'rtf',
+    rtfCategory: rwizState.category,
+    subtype:     rwizState.subtype||'',
+    spec,
+    cat:         rwizState.category,
+    qty,
+    unit:        'pcs',
+    uwt:         0,        // RTF items tracked by pcs, not weight
+    price,
+    priceKg:     0,
+    condition:   cond,
+    loc,
+    minstock:    min,
+    notes,
+  };
+
+  try{
+    await window._db.addItem(data);
+    showToast(`${data.name} added ✓`);
+    closeDrawer('overlay-rtf');
+    switchTab('rtf');
+  }catch(e){ alert('Save failed: '+e.message); }
+};
+
+// ── renderRTF ─────────────────────────────────────────────────────────
+window.renderRTF = function(){
+  const list  = items().filter(i=>i.type==='rtf');
+  const q     = (document.getElementById('search-rtf')||{}).value?.toLowerCase()||'';
+  const cat   = (document.getElementById('filter-rtf-cat')||{}).value||'';
+  const st    = (document.getElementById('filter-rtf-stock')||{}).value||'';
+
+  const f = list.filter(i=>{
+    const words = q?q.split(/\s+/).filter(Boolean):[];
+    const searchable = [i.name,i.rtfCategory,i.subtype,i.spec,i.loc,i.notes].filter(Boolean).join(' ').toLowerCase();
+    const mq = !q||words.every(w=>searchable.includes(w));
+    const mc = !cat||i.rtfCategory===cat;
+    // stock check: minstock in pcs
+    const low = i.minstock>0 && i.qty<=i.minstock;
+    const ms  = !st||(st==='low'?low:!low);
+    return mq&&mc&&ms;
+  });
+
+  // Stats
+  const totVal   = f.reduce((a,i)=>a+i.qty*i.price,0);
+  const lowCount = f.filter(i=>i.minstock>0&&i.qty<=i.minstock).length;
+  document.getElementById('stats-rtf').innerHTML = `
+    <div class="stat-card" style="--accent-color:var(--purple)">
+      <div class="stat-label">RTF items</div>
+      <div class="stat-val">${list.length}</div>
+      <div class="stat-sub">${f.length} shown</div>
+    </div>
+    <div class="stat-card" style="--accent-color:var(--blue)">
+      <div class="stat-label">Total value</div>
+      <div class="stat-val">Rs ${fmt(totVal)}</div>
+    </div>
+    <div class="stat-card" style="--accent-color:${lowCount>0?'var(--amber)':'var(--green)'}">
+      <div class="stat-label">Low stock</div>
+      <div class="stat-val ${lowCount>0?'danger':''}">${lowCount}</div>
+    </div>`;
+
+  document.getElementById('tbody-rtf').innerHTML = f.length ? f.map(i=>{
+    const [pillCls, pillLabel] = rtfPillClass(i.rtfCategory||i.cat||'');
+    const rc   = 'rtf-'+rtfCatKey(i.rtfCategory||i.cat||'');
+    const low  = i.minstock>0 && i.qty<=i.minstock;
+    const condClass = i.condition==='New'?'badge-good':i.condition==='Good'?'badge-good':i.condition==='Used'?'badge-fair':'badge-worn';
+    const actions = isAdmin() ? `<div class="actions-cell">
+      <button class="btn btn-sm btn-green" onclick="openRTFQA('${i.id}','IN')">IN</button>
+      <button class="btn btn-sm btn-red"   onclick="openRTFQA('${i.id}','OUT')">OUT</button>
+      <button class="btn btn-sm btn-amber" onclick="openRTFQA('${i.id}','ADJ')">ADJ</button>
+      <button class="action-link" onclick="openEditRTF('${i.id}')">Edit</button>
+      <button class="action-link danger" onclick="deleteItem('${i.id}','${i.name.replace(/'/g,"\'")}',${i.qty})">Del</button>
+    </div>` : '<span style="font-size:11px;color:var(--text3)">View only</span>';
+    return `<tr class="${rc}">
+      <td>
+        <div style="font-weight:600;font-size:13px">${i.name}</div>
+        <div style="display:flex;gap:4px;margin-top:3px">
+          <span class="rtf-pill ${pillCls}">${pillLabel}</span>
+          ${i.notes?`<span style="font-size:10px;color:var(--text3)">${i.notes}</span>`:''}
+        </div>
+      </td>
+      <td style="font-size:11px;color:var(--text2)">${i.subtype||'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${i.spec||'—'}</td>
+      <td class="num" style="font-weight:600${low?' color:var(--red)':''}">${i.qty} pcs${low?' ⚠':''}</td>
+      <td class="num" style="font-size:11px;color:var(--text3)">${i.minstock||0} pcs</td>
+      <td class="num">Rs ${fmt(i.price||0)}</td>
+      <td class="num" style="font-weight:600">Rs ${fmt(i.qty*(i.price||0))}</td>
+      <td style="font-size:11px;color:var(--text2)">${i.loc||'—'}</td>
+      <td>${actions}</td>
+    </tr>`;
+  }).join('') : '<tr class="empty-row"><td colspan="9">No RTF items match.</td></tr>';
+};
+
+// ── Simple IN/OUT/ADJ for RTF (pcs only, no dimensions) ────────────────
+let _rtfQAId=null, _rtfQAType=null;
+window.openRTFQA = function(id, type){
+  const item = items().find(i=>i.id===id); if(!item) return;
+  _rtfQAId = id; _rtfQAType = type;
+  const label = type==='IN'?'Stock IN':'type==="OUT"'?'Stock OUT':'Adjustment';
+  // reuse existing QA modal but override fields
+  document.getElementById('qa-title').textContent    = type==='IN'?'Stock IN — Receive Items':type==='OUT'?'Stock OUT — Issue Items':'Adjustment';
+  document.getElementById('qa-item-name').textContent= item.name;
+  document.getElementById('qa-current-qty').textContent = item.qty+' pcs';
+  document.getElementById('qa-current-wt').textContent  = '—';
+  document.getElementById('qa-current-val').textContent = 'Rs '+(item.qty*(item.price||0)).toLocaleString('en-PK');
+  // hide dim fields, show a simple qty input
+  document.getElementById('qa-dims-sheet').style.display='none';
+  document.getElementById('qa-dims-rod').style.display='none';
+  // use the sheet qty field as a simple "pcs" field
+  const sheetDiv = document.getElementById('qa-dims-sheet');
+  sheetDiv.innerHTML=`<div class="form-group" style="margin-bottom:10px"><label>${type==='IN'?'Pieces received':type==='OUT'?'Pieces issued':'New total qty'}</label><input type="number" id="qa-rtf-pcs" value="1" min="1" style="max-width:140px"></div>`;
+  sheetDiv.style.display='block';
+  document.getElementById('overlay-qa').classList.add('open');
+  // override the confirm button
+  window._rtfQAActive = true;
+};
+
+// RTF confirm — override QA confirm when RTF is active
+const _origConfirmQA = window.confirmQA;
+window.confirmQA = async function(){
+  if(!window._rtfQAActive){ if(_origConfirmQA) return _origConfirmQA(); return; }
+  window._rtfQAActive = false;
+  const item = items().find(i=>i.id===_rtfQAId); if(!item) return;
+  const pcs  = +document.getElementById('qa-rtf-pcs')?.value||0;
+  if(pcs<1){showToast('Enter valid quantity');return;}
+  let delta = _rtfQAType==='IN'?pcs:_rtfQAType==='OUT'?-pcs:(pcs-item.qty);
+  const note = `${_rtfQAType} ${Math.abs(pcs)} pcs`;
+  try{
+    await window._db.stockAction(_rtfQAId, item, delta, _rtfQAType, note);
+    closeDrawer('overlay-qa');
+    renderRTF();
+    showToast(`${_rtfQAType}: ${Math.abs(pcs)} pcs updated ✓`);
+  }catch(e){ showToast('Error: '+e.message); }
+};
+
+// ── Edit RTF ────────────────────────────────────────────────────────────
+window.openEditRTF = function(id){
+  if(!isAdmin()){showToast('Admins only');return;}
+  const i = items().find(x=>x.id===id); if(!i) return;
+  // reuse the standard edit modal
+  _editItemId = id;
+  document.getElementById('edit-item-name').textContent = i.name;
+  document.getElementById('edit-notes').value    = i.notes||'';
+  document.getElementById('edit-loc').value      = i.loc||'';
+  document.getElementById('edit-minstock').value = i.minstock||0;
+  document.getElementById('overlay-edit').classList.add('open');
+};
+
 // WEIGHT CALC
 window.calcSheet=function(){
   const L=+document.getElementById('sh-l').value,W=+document.getElementById('sh-w').value,T=+document.getElementById('sh-t').value,rho=+document.getElementById('sh-mat').value,qty=+document.getElementById('sh-qty').value||1;
@@ -3310,11 +3718,4 @@ window.genReport = (function(_orig){
       </tr></tfoot>
     </table>
     <div class="footer"><span>Jidoka Inventory Manager — Confidential</span><span>${now}</span></div>
-    <scr\u0069pt>window.onload=function(){setTimeout(()=>window.print(),700)}<\/script>
-    </body></html>`;
-    const w=window.open('','_blank');w.document.write(html);w.document.close();
-  };
-})(window.genReport||function(){});
-</script>
-</body>
-</html>
+    <scr\u0069pt>window
