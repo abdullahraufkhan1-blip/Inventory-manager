@@ -700,62 +700,178 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
     <div id="tab-reports" class="panel">
       <div style="font-size:12px;color:var(--text2);margin-bottom:14px">Apply filters then click Generate PDF. Report opens in a new tab — use Ctrl+P to save as PDF.</div>
       <div class="report-grid">
+
+        <!-- STOCK IN -->
         <div class="report-card">
           <div class="report-card-title">📥 Stock IN History</div>
-          <div class="report-card-desc">All received material within date range</div>
+          <div class="report-card-desc">All received items within date range</div>
           <div class="report-filters">
             <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">FROM</label><input type="date" id="rpt-in-from"></div>
             <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">TO</label><input type="date" id="rpt-in-to"></div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label>
-              <select id="rpt-in-cat"><option value="">All</option><option>SS Sheet</option><option>SS Rod</option><option>MS Sheet</option><option>MS Rod</option><option>Brass</option><option>Teflon</option><option>Other</option></select>
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM FILTER</label><input type="text" id="rpt-in-item" placeholder="e.g. SS 304"></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM TYPE</label><select id="rpt-in-type"><option value="">All types</option>
+              <option value="rm">Raw Materials</option>
+              <option value="tool">Tooling</option>
+              <option value="rtf">Ready-to-Fit</option></select></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label><select id="rpt-in-cat"><option value="">All categories</option>
+              <optgroup label="── Raw Material ──">
+                <option value="Steel — Mild Steel (MS)">MS (Mild Steel)</option>
+                <option value="Steel — Stainless Steel (SS 201)">SS 201</option>
+                <option value="Steel — Stainless Steel (SS 304)">SS 304</option>
+                <option value="Steel — Stainless Steel (D2)">SS D2</option>
+                <option value="Aluminum — Aluminum (6061 T6)">Aluminum 6061</option>
+                <option value="Teflon — Teflon (>250 Degree)">Teflon &gt;250°</option>
+                <option value="Iron — Galvanoized Iron (GI)">Iron / GI</option>
+                <option value="Brass — As per Market Availability">Brass</option>
+              </optgroup>
+              <optgroup label="── Tooling ──">
+                <option value="Cutting Tools">Cutting Tools</option>
+                <option value="Measuring Instruments">Measuring Instruments</option>
+                <option value="Hand Tools">Hand Tools</option>
+                <option value="Fixtures &amp; Jigs">Fixtures &amp; Jigs</option>
+                <option value="Consumables">Consumables</option>
+              </optgroup>
+              <optgroup label="── Ready-to-Fit ──">
+                <option value="Pneumatic">Pneumatic</option>
+                <option value="Linear Motion">Linear Motion</option>
+                <option value="Power Transmission">Power Transmission</option>
+                <option value="Fasteners">Fasteners</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Structural">Structural</option>
+                <option value="Programmable">Programmable</option>
+              </optgroup></select></div>
+            <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM NAME CONTAINS</label><input type="text" id="rpt-in-item" placeholder="e.g. SS 304, Cylinder…"></div>
           </div>
           <button class="report-btn green" onclick="genReport('IN')">Generate PDF — Stock IN</button>
         </div>
+
+        <!-- STOCK OUT -->
         <div class="report-card">
           <div class="report-card-title">📤 Stock OUT History</div>
-          <div class="report-card-desc">All material issued to production</div>
+          <div class="report-card-desc">All items issued to production</div>
           <div class="report-filters">
             <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">FROM</label><input type="date" id="rpt-out-from"></div>
             <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">TO</label><input type="date" id="rpt-out-to"></div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label>
-              <select id="rpt-out-cat"><option value="">All</option><option>SS Sheet</option><option>SS Rod</option><option>MS Sheet</option><option>MS Rod</option><option>Brass</option><option>Teflon</option><option>Other</option></select>
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM FILTER</label><input type="text" id="rpt-out-item" placeholder="e.g. MS Rod"></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM TYPE</label><select id="rpt-out-type"><option value="">All types</option>
+              <option value="rm">Raw Materials</option>
+              <option value="tool">Tooling</option>
+              <option value="rtf">Ready-to-Fit</option></select></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label><select id="rpt-out-cat"><option value="">All categories</option>
+              <optgroup label="── Raw Material ──">
+                <option value="Steel — Mild Steel (MS)">MS (Mild Steel)</option>
+                <option value="Steel — Stainless Steel (SS 201)">SS 201</option>
+                <option value="Steel — Stainless Steel (SS 304)">SS 304</option>
+                <option value="Steel — Stainless Steel (D2)">SS D2</option>
+                <option value="Aluminum — Aluminum (6061 T6)">Aluminum 6061</option>
+                <option value="Teflon — Teflon (>250 Degree)">Teflon &gt;250°</option>
+                <option value="Iron — Galvanoized Iron (GI)">Iron / GI</option>
+                <option value="Brass — As per Market Availability">Brass</option>
+              </optgroup>
+              <optgroup label="── Tooling ──">
+                <option value="Cutting Tools">Cutting Tools</option>
+                <option value="Measuring Instruments">Measuring Instruments</option>
+                <option value="Hand Tools">Hand Tools</option>
+                <option value="Fixtures &amp; Jigs">Fixtures &amp; Jigs</option>
+                <option value="Consumables">Consumables</option>
+              </optgroup>
+              <optgroup label="── Ready-to-Fit ──">
+                <option value="Pneumatic">Pneumatic</option>
+                <option value="Linear Motion">Linear Motion</option>
+                <option value="Power Transmission">Power Transmission</option>
+                <option value="Fasteners">Fasteners</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Structural">Structural</option>
+                <option value="Programmable">Programmable</option>
+              </optgroup></select></div>
+            <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM NAME CONTAINS</label><input type="text" id="rpt-out-item" placeholder="e.g. MS Rod, Belt…"></div>
           </div>
           <button class="report-btn" style="background:var(--red)" onclick="genReport('OUT')">Generate PDF — Stock OUT</button>
         </div>
+
+        <!-- MOVEMENT SUMMARY -->
         <div class="report-card">
           <div class="report-card-title">📊 Movement Summary</div>
           <div class="report-card-desc">Total IN vs OUT per item — net movement</div>
           <div class="report-filters">
             <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">FROM</label><input type="date" id="rpt-mov-from"></div>
             <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">TO</label><input type="date" id="rpt-mov-to"></div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label>
-              <select id="rpt-mov-cat"><option value="">All</option><option>SS Sheet</option><option>SS Rod</option><option>MS Sheet</option><option>MS Rod</option><option>Brass</option><option>Teflon</option><option>Other</option></select>
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM FILTER</label><input type="text" id="rpt-mov-item" placeholder="optional"></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM TYPE</label><select id="rpt-mov-type"><option value="">All types</option>
+              <option value="rm">Raw Materials</option>
+              <option value="tool">Tooling</option>
+              <option value="rtf">Ready-to-Fit</option></select></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label><select id="rpt-mov-cat"><option value="">All categories</option>
+              <optgroup label="── Raw Material ──">
+                <option value="Steel — Mild Steel (MS)">MS (Mild Steel)</option>
+                <option value="Steel — Stainless Steel (SS 201)">SS 201</option>
+                <option value="Steel — Stainless Steel (SS 304)">SS 304</option>
+                <option value="Steel — Stainless Steel (D2)">SS D2</option>
+                <option value="Aluminum — Aluminum (6061 T6)">Aluminum 6061</option>
+                <option value="Teflon — Teflon (>250 Degree)">Teflon &gt;250°</option>
+                <option value="Iron — Galvanoized Iron (GI)">Iron / GI</option>
+                <option value="Brass — As per Market Availability">Brass</option>
+              </optgroup>
+              <optgroup label="── Tooling ──">
+                <option value="Cutting Tools">Cutting Tools</option>
+                <option value="Measuring Instruments">Measuring Instruments</option>
+                <option value="Hand Tools">Hand Tools</option>
+                <option value="Fixtures &amp; Jigs">Fixtures &amp; Jigs</option>
+                <option value="Consumables">Consumables</option>
+              </optgroup>
+              <optgroup label="── Ready-to-Fit ──">
+                <option value="Pneumatic">Pneumatic</option>
+                <option value="Linear Motion">Linear Motion</option>
+                <option value="Power Transmission">Power Transmission</option>
+                <option value="Fasteners">Fasteners</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Structural">Structural</option>
+                <option value="Programmable">Programmable</option>
+              </optgroup></select></div>
+            <div style="grid-column:1/-1"><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM NAME CONTAINS</label><input type="text" id="rpt-mov-item" placeholder="optional"></div>
           </div>
           <button class="report-btn blue" onclick="genReport('MOVEMENT')">Generate PDF — Movement Summary</button>
         </div>
+
+        <!-- STOCK SNAPSHOT -->
         <div class="report-card">
           <div class="report-card-title">📋 Stock Snapshot</div>
           <div class="report-card-desc">Full inventory as it stands right now</div>
           <div class="report-filters">
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label>
-              <select id="rpt-snap-cat"><option value="">All</option><option>SS Sheet</option><option>SS Rod</option><option>MS Sheet</option><option>MS Rod</option><option>Brass</option><option>Teflon</option><option>Other</option></select>
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">TYPE</label>
-              <select id="rpt-snap-type"><option value="">All types</option><option value="rm">Raw Materials</option><option value="tool">Tooling</option></select>
-            </div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM FILTER</label><input type="text" id="rpt-snap-item" placeholder="optional"></div>
-            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">SHOW</label>
-              <select id="rpt-snap-stock"><option value="">All items</option><option value="low">Low stock only</option><option value="ok">In stock only</option></select>
-            </div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM TYPE</label><select id="rpt-snap-type"><option value="">All types</option>
+              <option value="rm">Raw Materials</option>
+              <option value="tool">Tooling</option>
+              <option value="rtf">Ready-to-Fit</option></select></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">CATEGORY</label><select id="rpt-snap-cat"><option value="">All categories</option>
+              <optgroup label="── Raw Material ──">
+                <option value="Steel — Mild Steel (MS)">MS (Mild Steel)</option>
+                <option value="Steel — Stainless Steel (SS 201)">SS 201</option>
+                <option value="Steel — Stainless Steel (SS 304)">SS 304</option>
+                <option value="Steel — Stainless Steel (D2)">SS D2</option>
+                <option value="Aluminum — Aluminum (6061 T6)">Aluminum 6061</option>
+                <option value="Teflon — Teflon (>250 Degree)">Teflon &gt;250°</option>
+                <option value="Iron — Galvanoized Iron (GI)">Iron / GI</option>
+                <option value="Brass — As per Market Availability">Brass</option>
+              </optgroup>
+              <optgroup label="── Tooling ──">
+                <option value="Cutting Tools">Cutting Tools</option>
+                <option value="Measuring Instruments">Measuring Instruments</option>
+                <option value="Hand Tools">Hand Tools</option>
+                <option value="Fixtures &amp; Jigs">Fixtures &amp; Jigs</option>
+                <option value="Consumables">Consumables</option>
+              </optgroup>
+              <optgroup label="── Ready-to-Fit ──">
+                <option value="Pneumatic">Pneumatic</option>
+                <option value="Linear Motion">Linear Motion</option>
+                <option value="Power Transmission">Power Transmission</option>
+                <option value="Fasteners">Fasteners</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Structural">Structural</option>
+                <option value="Programmable">Programmable</option>
+              </optgroup></select></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">ITEM NAME CONTAINS</label><input type="text" id="rpt-snap-item" placeholder="optional"></div>
+            <div><label style="font-size:10px;color:var(--text3);font-weight:600;display:block;margin-bottom:3px">SHOW</label><select id="rpt-snap-stock"><option value="">All items</option><option value="low">Low stock only</option><option value="ok">In stock only</option></select></div>
           </div>
           <button class="report-btn purple" onclick="genReport('SNAPSHOT')">Generate PDF — Stock Snapshot</button>
         </div>
+
       </div>
     </div>
 
@@ -3447,16 +3563,29 @@ window.genReport=function(type){
   const allLogs=logs();
   const allItems=items();
 
+  // Helper: match item by type and category filters
+  function matchItem(itemId, typeFilter, catFilter){
+    if(!typeFilter && !catFilter) return true;
+    const item = allItems.find(i=>i.id===itemId);
+    if(!item) return !typeFilter && !catFilter; // log entry for deleted item
+    const tOk = !typeFilter || item.type===typeFilter;
+    // category match: check cat, rtfCategory, toolCategory fields
+    const itemCat = item.cat||item.rtfCategory||item.toolCategory||'';
+    const cOk = !catFilter || itemCat===catFilter;
+    return tOk && cOk;
+  }
+
   if(type==='IN'||type==='OUT'){
     const prefix='rpt-'+(type==='IN'?'in':'out')+'-';
     const {from,to}=getDateBounds(prefix+'from',prefix+'to');
     const cat=document.getElementById(prefix+'cat').value;
+    const itype=document.getElementById(prefix+'type').value;
     const itemQ=document.getElementById(prefix+'item').value.trim().toLowerCase();
 
     const filtered=allLogs.filter(l=>
       l.action===type &&
       inRange(l.ts,from,to) &&
-      (!cat || (allItems.find(i=>i.id===l.itemId)?.cat===cat || l.itemName?.toLowerCase().includes(cat.toLowerCase()))) &&
+      matchItem(l.itemId, itype, cat) &&
       (!itemQ || l.itemName?.toLowerCase().includes(itemQ))
     );
 
@@ -3565,11 +3694,12 @@ window.genReport=function(type){
   else if(type==='SNAPSHOT'){
     const cat=document.getElementById('rpt-snap-cat').value;
     const snapType=document.getElementById('rpt-snap-type').value;
+    const snapCatFilter=document.getElementById('rpt-snap-cat').value;
     const itemQ=document.getElementById('rpt-snap-item').value.trim().toLowerCase();
     const stockFilter=document.getElementById('rpt-snap-stock').value;
 
     const filtered=allItems.filter(i=>
-      (!cat||i.cat===cat) &&
+      (!snapCatFilter||(i.cat||i.rtfCategory||i.toolCategory||'')===snapCatFilter) &&
       (!snapType||i.type===snapType) &&
       (!itemQ||i.name?.toLowerCase().includes(itemQ)) &&
       (!stockFilter||(stockFilter==='low'?stockLevel(i).low:!stockLevel(i).low))
