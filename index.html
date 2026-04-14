@@ -3003,15 +3003,13 @@ window.seedFirestore = async function(){
 
   let count = 0;
   const errors = [];
-  // Import using Firestore SDK directly (works on deployed app)
-  const {collection:col2, addDoc:addDoc2} = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
-  const itemsCollection = col2(window._firestore, 'items');
+  // Use window._db.addItem which is already wired to Firebase addDoc
   for(const item of seedItems){
     try{
       const {id,...data} = item;
-      await addDoc2(itemsCollection, data);
+      await window._db.addItem(data);
       count++;
-      status.textContent = `${count}/${seedItems.length} imported…`;
+      if(status) status.textContent = count+'/'+seedItems.length+' imported…';
     }catch(e){
       errors.push(item.name+': '+e.message);
       console.error('Seed error for '+item.name+':', e);
@@ -3627,7 +3625,6 @@ window.genReport = (function(_orig){
   return function(type){
     if(type!=='SCRAP'){ return _orig(type); }
 
-    // Collect scrap data — merge local + audit logs
     const auditScraps=logs().filter(l=>l.action==='SCRAP').map(l=>({
       itemName:l.itemName, cat:(items().find(i=>i.id===l.itemId)||{}).cat||'',
       pcs:Math.abs(l.delta||0),
@@ -3660,62 +3657,46 @@ window.genReport = (function(_orig){
     const rows=f.map(s=>{
       const ts=s.ts?.toDate?s.ts.toDate():new Date();
       const dt=ts.toLocaleDateString('en-PK')+' '+ts.toLocaleTimeString('en-PK',{hour:'2-digit',minute:'2-digit'});
-      return`<tr>
-        <td>${dt}</td>
-        <td><b>${s.itemName||'—'}</b></td>
-        <td>${s.cat||s.matSpec||'—'}</td>
-        <td>${s.pcs||0}</td>
-        <td style="color:#991b1b"><b>${(s.totalWt||0).toFixed(3)} kg</b></td>
-        <td style="color:#991b1b">Rs ${(s.valueLost||0).toLocaleString('en-PK')}</td>
-        <td style="color:#555">${s.reason||'—'}</td>
-        <td style="color:#888">${s.user||'—'}</td>
-      </tr>`;
+      return '<tr><td>'+dt+'</td><td><b>'+(s.itemName||'')+'</b></td><td>'+(s.cat||'')+'</td><td>'+(s.pcs||0)+'</td><td style="color:#991b1b"><b>'+((s.totalWt||0).toFixed(3))+' kg</b></td><td style="color:#991b1b">Rs '+((s.valueLost||0).toLocaleString('en-PK'))+'</td><td style="color:#555">'+(s.reason||'')+'</td><td style="color:#888">'+(s.user||'')+'</td></tr>';
     }).join('');
 
-    const html=`<!DOCTYPE html><html><head><meta charset="UTF-8">
-    <title>Scrap Report — Jidoka</title>
-    <style>
-      @page{size:A4;margin:18mm 16mm}
-      body{font-family:Arial,sans-serif;font-size:11px;color:#111}
-      .hdr{display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px}
-      .logo{font-size:18px;font-weight:700}.logo span{font-size:11px;font-weight:400;color:#666;display:block}
-      .meta{text-align:right;font-size:10px;color:#666;line-height:1.7}
-      h2{font-size:15px;font-weight:700;margin-bottom:2px}
-      .sub{font-size:11px;color:#666;margin-bottom:14px}
-      .cards{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}
-      .card{flex:1;min-width:100px;background:#fdecea;border-radius:6px;padding:9px 12px;border:0.5px solid #f9a8a8}
-      .card-label{font-size:9px;color:#7f1d1d;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px}
-      .card-val{font-size:15px;font-weight:700;color:#991b1b}
-      table{width:100%;border-collapse:collapse}
-      thead tr{background:#111;color:#fff}
-      th{padding:6px 8px;text-align:left;font-size:10px;font-weight:600}
-      td{padding:5px 8px;border-bottom:0.5px solid #e0e0e0;font-size:10.5px}
-      tr:nth-child(even)td{background:#fff5f5}
-      tfoot td{font-weight:700;border-top:1.5px solid #111;background:#fdecea}
-      .footer{border-top:0.5px solid #ddd;padding-top:8px;margin-top:10px;font-size:9px;color:#aaa;display:flex;justify-content:space-between}
-    </style></head><body>
-    <div class="hdr">
-      <div><div class="logo">Jidoka<span>Inventory Manager</span></div></div>
-      <div class="meta"><b>Scrap Report</b><br>${cat?'Category: '+cat:'All categories'}<br>Generated: ${now}<br>By: ${window._currentUser?.username||'—'}</div>
-    </div>
-    <h2>Scrap Material Report</h2>
-    <div class="sub">Complete record of all scrapped material${from||to?' for period '+((from?from.toLocaleDateString('en-PK'):'start')+' → '+(to?to.toLocaleDateString('en-PK'):'now')):''}</div>
-    <div class="cards">
-      <div class="card"><div class="card-label">Scrap entries</div><div class="card-val">${f.length}</div></div>
-      <div class="card"><div class="card-label">Total pcs scrapped</div><div class="card-val">${totPcs}</div></div>
-      <div class="card"><div class="card-label">Total weight scrapped</div><div class="card-val">${totWt.toFixed(3)} kg</div></div>
-      <div class="card"><div class="card-label">Total value lost</div><div class="card-val">Rs ${totVal.toLocaleString('en-PK')}</div></div>
-    </div>
-    <table>
-      <thead><tr><th>Date / Time</th><th>Item</th><th>Category</th><th>Pcs</th><th>Weight Scrapped</th><th>Value Lost</th><th>Reason</th><th>By</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr>
-        <td colspan="3">TOTAL</td>
-        <td>${totPcs}</td>
-        <td>${totWt.toFixed(3)} kg</td>
-        <td>Rs ${totVal.toLocaleString('en-PK')}</td>
-        <td colspan="2"></td>
-      </tr></tfoot>
-    </table>
-    <div class="footer"><span>Jidoka Inventory Manager — Confidential</span><span>${now}</span></div>
-    <scr\u0069pt>window
+    const html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Scrap Report</title>'
+      +'<style>@page{size:A4;margin:18mm 16mm}body{font-family:Arial,sans-serif;font-size:11px;color:#111}'
+      +'.hdr{display:flex;justify-content:space-between;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:14px}'
+      +'.logo{font-size:18px;font-weight:700}h2{font-size:15px;font-weight:700;margin-bottom:2px}'
+      +'.sub{font-size:11px;color:#666;margin-bottom:14px}.meta{text-align:right;font-size:10px;color:#666;line-height:1.7}'
+      +'.cards{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap}'
+      +'.card{flex:1;min-width:100px;background:#fdecea;border-radius:6px;padding:9px 12px}'
+      +'.card-label{font-size:9px;color:#7f1d1d;text-transform:uppercase;margin-bottom:3px}'
+      +'.card-val{font-size:15px;font-weight:700;color:#991b1b}'
+      +'table{width:100%;border-collapse:collapse}thead tr{background:#111;color:#fff}'
+      +'th{padding:6px 8px;text-align:left;font-size:10px}td{padding:5px 8px;border-bottom:0.5px solid #e0e0e0;font-size:10.5px}'
+      +'tfoot td{font-weight:700;border-top:1.5px solid #111;background:#fdecea}'
+      +'.footer{border-top:0.5px solid #ddd;padding-top:8px;margin-top:10px;font-size:9px;color:#aaa;display:flex;justify-content:space-between}'
+      +'</style></head><body>'
+      +'<div class="hdr"><div><div class="logo">Jidoka Center</div></div>'
+      +'<div class="meta"><b>Scrap Report</b><br>'+(cat?'Category: '+cat:'All categories')+'<br>Generated: '+now+'<br>By: '+(window._currentUser?.username||'')+'</div></div>'
+      +'<h2>Scrap Material Report</h2>'
+      +'<div class="sub">Complete record of all scrapped material</div>'
+      +'<div class="cards">'
+      +'<div class="card"><div class="card-label">Entries</div><div class="card-val">'+f.length+'</div></div>'
+      +'<div class="card"><div class="card-label">Pcs scrapped</div><div class="card-val">'+totPcs+'</div></div>'
+      +'<div class="card"><div class="card-label">Weight scrapped</div><div class="card-val">'+totWt.toFixed(3)+' kg</div></div>'
+      +'<div class="card"><div class="card-label">Value lost</div><div class="card-val">Rs '+totVal.toLocaleString('en-PK')+'</div></div>'
+      +'</div>'
+      +'<table><thead><tr><th>Date/Time</th><th>Item</th><th>Category</th><th>Pcs</th><th>Weight</th><th>Value Lost</th><th>Reason</th><th>By</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'<tfoot><tr><td colspan="3">TOTAL</td><td>'+totPcs+'</td><td>'+totWt.toFixed(3)+' kg</td><td>Rs '+totVal.toLocaleString('en-PK')+'</td><td colspan="2"></td></tr></tfoot>'
+      +'</table>'
+      +'<div class="footer"><span>Jidoka Inventory — Confidential</span><span>'+now+'</span></div>'
+      +'<scr'+'ipt>window.onload=function(){setTimeout(function(){window.print();},700);}<\/scr'+'ipt>'
+      +'</body></html>';
+
+    const w=window.open('','_blank');
+    w.document.write(html);
+    w.document.close();
+  };
+})(window.genReport||function(){});
+</script>
+</body>
+</html>
