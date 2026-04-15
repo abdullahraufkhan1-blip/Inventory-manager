@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jidoka Inventory System</title>
+<meta name="description" content="Jidoka Center Inventory Management System">
+<meta name="theme-color" content="#0ea5e9">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Jidoka IMS">
+<link rel="manifest" href="manifest.json">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -415,6 +422,9 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
         <span class="role-badge" id="user-role-badge"></span>
         <button class="signout-btn" onclick="doLogout()" title="Sign out">✕</button>
       </div>
+      <button id="pwa-install-btn" onclick="installPWA()" style="display:none;align-items:center;gap:5px;padding:6px 12px;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);font-size:12px;font-weight:600;color:var(--text2);cursor:pointer;white-space:nowrap">
+        ⬇ Install App
+      </button>
       <button class="btn-add-rm" id="btn-add-item" onclick="openAdd()">
         <span style="font-size:15px;line-height:1">+</span> Add Raw Material
       </button>
@@ -3887,6 +3897,40 @@ window.genReport = (function(_orig){
     w.document.close();
   };
 })(window.genReport||function(){});
+</script>
+<script>
+// ── PWA Install ──────────────────────────────────────────────────────
+let _pwaPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  _pwaPrompt = e;
+  const btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.style.display = 'flex';
+});
+
+window.installPWA = function(){
+  if(!_pwaPrompt) return;
+  _pwaPrompt.prompt();
+  _pwaPrompt.userChoice.then(result => {
+    if(result.outcome === 'accepted'){
+      const btn = document.getElementById('pwa-install-btn');
+      if(btn) btn.style.display = 'none';
+    }
+    _pwaPrompt = null;
+  });
+};
+
+window.addEventListener('appinstalled', () => {
+  const btn = document.getElementById('pwa-install-btn');
+  if(btn) btn.style.display = 'none';
+  _pwaPrompt = null;
+});
+
+// ── Service Worker ───────────────────────────────────────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
 </script>
 </body>
 </html>
