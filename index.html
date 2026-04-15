@@ -491,25 +491,45 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
         <div class="card-header">
           <div class="card-title">All Inventory Items</div>
           <div class="filter-bar" style="margin:0;flex:1;justify-content:flex-end">
-            <input type="text" id="search-all" placeholder="Search — type multiple words…" oninput="renderAll()" style="max-width:200px">
-            <select id="filter-mattype" onchange="renderAll()">
-              <option value="">All materials</option>
-              <option value="Steel">Steel</option>
-              <option value="Aluminum">Aluminum</option>
-              <option value="Teflon">Teflon</option>
-              <option value="Brass">Brass</option>
-              <option value="Iron">Iron (GI)</option>
-            </select>
-            <select id="filter-formation" onchange="renderAll()">
-              <option value="">Sheet &amp; Rod</option>
-              <option value="Sheet">Sheet / Plate</option>
-              <option value="Rod">Rod / Bar</option>
-              <option value="Extrusion Profile">Extrusion</option>
-            </select>
+            <input type="text" id="search-all" placeholder="Search — type multiple words…" oninput="renderAll()" style="max-width:180px">
             <select id="filter-itemtype" onchange="renderAll()">
-              <option value="">RM &amp; Tooling</option>
+              <option value="">All types</option>
               <option value="rm">Raw Material</option>
               <option value="tool">Tooling</option>
+              <option value="rtf">Ready-to-Fit</option>
+            </select>
+            <select id="filter-allcat" onchange="renderAll()">
+              <option value="">All categories</option>
+              <optgroup label="── Raw Material ──">
+                <option value="Steel">Steel (all)</option>
+                <option value="Mild Steel (MS)">MS (Mild Steel)</option>
+                <option value="Stainless Steel (SS 201)">SS 201</option>
+                <option value="Stainless Steel (SS 304)">SS 304</option>
+                <option value="Stainless Steel (D2)">SS D2</option>
+                <option value="Aluminum (6061 T6)">Aluminum 6061</option>
+                <option value="Teflon (>250 Degree)">Teflon &gt;250°</option>
+                <option value="Galvanoized Iron (GI)">Iron / GI</option>
+                <option value="As per Market Availability">Brass</option>
+                <option value="Sheet">Formation: Sheet</option>
+                <option value="Rod">Formation: Rod</option>
+                <option value="Extrusion Profile">Formation: Extrusion</option>
+              </optgroup>
+              <optgroup label="── Tooling ──">
+                <option value="Cutting Tools">Cutting Tools</option>
+                <option value="Measuring Instruments">Measuring Instruments</option>
+                <option value="Hand Tools">Hand Tools</option>
+                <option value="Fixtures &amp; Jigs">Fixtures &amp; Jigs</option>
+                <option value="Consumables">Consumables</option>
+              </optgroup>
+              <optgroup label="── Ready-to-Fit ──">
+                <option value="Pneumatic">Pneumatic</option>
+                <option value="Linear Motion">Linear Motion</option>
+                <option value="Power Transmission">Power Transmission</option>
+                <option value="Fasteners">Fasteners</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Structural">Structural</option>
+                <option value="Programmable">Programmable</option>
+              </optgroup>
             </select>
             <select id="filter-stock" onchange="renderAll()">
               <option value="">All stock</option><option value="low">⚠ Low stock</option><option value="ok">In stock</option>
@@ -1848,36 +1868,76 @@ function actionBtns(i){
 
 window.renderAll=function(){
   const list=items();
-  const q=(document.getElementById('search-all')||{}).value?.toLowerCase()||'';
-  const mattype=(document.getElementById('filter-mattype')||{}).value||'';
-  const formation=(document.getElementById('filter-formation')||{}).value||'';
-  const itemtype=(document.getElementById('filter-itemtype')||{}).value||'';
-  const st=(document.getElementById('filter-stock')||{}).value||'';
+  const q       = (document.getElementById('search-all')||{}).value?.toLowerCase()||'';
+  const itemtype= (document.getElementById('filter-itemtype')||{}).value||'';
+  const allcat  = (document.getElementById('filter-allcat')||{}).value||'';
+  const st      = (document.getElementById('filter-stock')||{}).value||'';
+
   const f=list.filter(i=>{
+    // Multi-word search across all fields
     const words=q?q.split(/\s+/).filter(Boolean):[];
-    const searchable=[i.name,i.cat,i.loc,i.grade,i.matSpec,i.matType,i.formation,i.notes].filter(Boolean).join(' ').toLowerCase();
+    const searchable=[i.name,i.cat,i.loc,i.grade,i.matSpec,i.matType,i.formation,
+                      i.rtfCategory,i.subtype,i.spec,i.toolCategory,i.notes]
+                      .filter(Boolean).join(' ').toLowerCase();
     const mq=!q||words.every(w=>searchable.includes(w));
-    const mm=!mattype||i.matType===mattype;
-    const mf=!formation||i.formation===formation;
+
+    // Item type filter (rm / tool / rtf)
     const mt=!itemtype||i.type===itemtype;
+
+    // Universal category filter — works across all 3 types
+    let mc=true;
+    if(allcat){
+      if(i.type==='rm'){
+        // Match matSpec, matType, or formation
+        mc = i.matSpec===allcat || i.matType===allcat || i.formation===allcat;
+      } else if(i.type==='tool'){
+        mc = i.toolCategory===allcat || i.cat===allcat;
+      } else if(i.type==='rtf'){
+        mc = i.rtfCategory===allcat || i.cat===allcat;
+      }
+    }
+
     const ms=!st||(st==='low'?stockLevel(i).low:!stockLevel(i).low);
-    return mq&&mm&&mf&&mt&&ms;
+    return mq&&mt&&mc&&ms;
   });
-  renderStats('stats-all',list);  // includes rm, tool, rtf
+
+  renderStats('stats-all',list);
+
   document.getElementById('tbody-all').innerHTML=f.length?f.map(i=>{
     const rc=specRowClass(i);
-    const [spClass,spLabel]=i.type==='rm'?specPillClass(i):['ms-tool','Tool'];
-    const matPill=`<span class="mat-type-pill ${spClass}">${spLabel}</span>`;
-    const fmPill=i.formation?`<span class="formation-pill ${i.formation==='Rod'?'fp-rod':i.formation==='Sheet'?'fp-sheet':'fp-extrusion'}">${i.formation}</span>`:'';
+
+    // Universal pill — RM gets spec pill, Tool gets category pill, RTF gets rtf pill
+    let mainPill='';
+    let subPill='';
+    if(i.type==='rm'){
+      const [spClass,spLabel]=specPillClass(i);
+      mainPill=`<span class="mat-type-pill ${spClass}">${spLabel}</span>`;
+      if(i.formation) subPill=`<span class="formation-pill ${i.formation==='Rod'?'fp-rod':i.formation==='Sheet'?'fp-sheet':'fp-extrusion'}">${i.formation}</span>`;
+    } else if(i.type==='tool'){
+      mainPill=toolCatPill(i.toolCategory||i.cat||'');
+    } else if(i.type==='rtf'){
+      const [pillCls,pillLabel]=rtfPillClass(i.rtfCategory||i.cat||'');
+      mainPill=`<span class="rtf-pill ${pillCls}">${pillLabel}</span>`;
+      if(i.subtype) subPill=`<span style="font-size:10px;color:var(--text3)">${i.subtype}</span>`;
+    }
+
+    // Qty display — RTF in pcs only, RM shows weight
+    const qtyDisplay=i.type==='rtf'
+      ? `${i.qty} pcs`
+      : `${i.qty} ${i.unit}`;
+    const wtDisplay=i.type==='rtf'||i.type==='tool'
+      ? '—'
+      : fmtKg(tw(i))+' kg';
+
     return`<tr class="${rc}">
       <td>
         <div style="font-weight:600;font-size:13px">${i.name}</div>
-        <div style="display:flex;gap:4px;margin-top:3px">${matPill}${fmPill}${i.notes?`<span style="font-size:10px;color:var(--text3)">${i.notes}</span>`:''}</div>
+        <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap">${mainPill}${subPill}${i.notes?`<span style="font-size:10px;color:var(--text3)">${i.notes}</span>`:''}</div>
       </td>
-      <td style="font-size:11px;color:var(--text2)">${i.matSpec||i.cat||''}</td>
-      <td class="num">${i.qty} ${i.unit}</td>
-      <td class="num">${fmtKg(tw(i))} kg</td>
-      <td class="num">Rs ${fmt(i.price)}</td>
+      <td style="font-size:11px;color:var(--text2)">${i.matSpec||i.rtfCategory||i.toolCategory||i.cat||'—'}</td>
+      <td class="num">${qtyDisplay}</td>
+      <td class="num">${wtDisplay}</td>
+      <td class="num">Rs ${fmt(i.price||0)}</td>
       <td class="num" style="font-weight:600">Rs ${fmt(tv(i))}</td>
       <td style="color:var(--text2);font-size:11px">${i.loc||'—'}</td>
       <td>${stockBar(i)}${stockLevel(i).low?'<span class="badge badge-low">Low</span>':''}</td>
