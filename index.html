@@ -1448,9 +1448,21 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
       </div>
     </div>
 
+    <!-- Method toggle -->
+    <div style="display:flex;gap:6px;margin-bottom:14px">
+      <button id="sc-method-dims" onclick="setScrapMethod('dims')"
+        style="flex:1;padding:7px;font-size:11px;font-weight:600;border-radius:var(--r);border:1.5px solid var(--red);background:var(--red);color:#fff;cursor:pointer">
+        📐 Calculate from dimensions
+      </button>
+      <button id="sc-method-direct" onclick="setScrapMethod('direct')"
+        style="flex:1;padding:7px;font-size:11px;font-weight:600;border-radius:var(--r);border:1.5px solid var(--border2);background:var(--surface);color:var(--text2);cursor:pointer">
+        ⚖ Enter weight directly
+      </button>
+    </div>
+
     <!-- Sheet dims -->
     <div id="scrap-dims-sheet">
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Enter dimensions of piece being scrapped</div>
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Dimensions of piece being scrapped</div>
       <div class="form-grid" style="margin-bottom:10px">
         <div class="form-group"><label>Thickness — T (mm)</label><input type="number" id="sc-T" placeholder="e.g. 6" min="0" step="any" oninput="scrapCalc()"></div>
         <div class="form-group"><label>Length (mm)</label><input type="number" id="sc-L" placeholder="e.g. 300" min="0" step="any" oninput="scrapCalc()"></div>
@@ -1460,7 +1472,7 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
     </div>
     <!-- Rod dims -->
     <div id="scrap-dims-rod" style="display:none">
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Enter dimensions of piece being scrapped</div>
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Dimensions of piece being scrapped</div>
       <div class="form-grid" style="margin-bottom:10px">
         <div class="form-group"><label>Diameter — ø (mm)</label><input type="number" id="sc-D" placeholder="e.g. 25" min="0" step="any" oninput="scrapCalc()"></div>
         <div class="form-group"><label>Length (mm)</label><input type="number" id="sc-RL" placeholder="e.g. 100" min="0" step="any" oninput="scrapCalc()"></div>
@@ -1468,8 +1480,17 @@ tr.tc-consumable td:first-child{border-left:3px solid #d97706}
       </div>
     </div>
 
+    <!-- Direct weight entry -->
+    <div id="scrap-direct" style="display:none">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:8px">Weigh the scrap on a scale and enter below</div>
+      <div class="form-grid" style="margin-bottom:10px">
+        <div class="form-group"><label>Actual weight (kg)</label><input type="number" id="sc-direct-wt" placeholder="e.g. 0.850" min="0" step="any" oninput="scrapCalcDirect()"></div>
+        <div class="form-group"><label>Pieces scrapped</label><input type="number" id="sc-direct-pcs" value="1" min="1" oninput="scrapCalcDirect()"></div>
+      </div>
+    </div>
+
     <!-- Live calc -->
-    <div style="background:var(--red-bg);border-radius:var(--radius);border:0.5px solid var(--red);padding:10px 14px;margin-bottom:12px">
+    <div style="background:var(--red-bg);border-radius:var(--r);border:0.5px solid var(--red);padding:10px 14px;margin-bottom:12px">
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
         <div><div style="font-size:11px;color:var(--red-text)">Unit weight</div><div style="font-size:13px;font-weight:500;color:var(--red-text)" id="sc-calc-uwt">—</div></div>
         <div><div style="font-size:11px;color:var(--red-text)">Total scrapped</div><div style="font-size:14px;font-weight:600;color:var(--red)" id="sc-calc-twt">—</div></div>
@@ -2805,6 +2826,33 @@ let _scrapItemId = null, _scrapItem = null;
 if(!window._scrapLog) window._scrapLog = [];
 
 window.openScrap = function(id){
+  if(!isAdmin()){ showToast('Admins only'); return; }
+  const item = items().find(i=>i.id===id);
+  if(!item) return;
+  window._scrapItem = item;
+  window._scrapMethod = 'dims';
+
+  document.getElementById('scrap-item-name').textContent = item.name;
+  document.getElementById('scrap-current-qty').textContent = item.qty+' pcs';
+  document.getElementById('scrap-current-wt').textContent  = fmtKg(tw(item))+' kg';
+  document.getElementById('scrap-current-val').textContent = 'Rs '+fmt(tv(item));
+
+  // Reset dims
+  ['sc-T','sc-L','sc-W','sc-D','sc-RL'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
+  const pcsEl=document.getElementById('sc-pcs'); if(pcsEl) pcsEl.value='1';
+  const rpcsEl=document.getElementById('sc-rpcs'); if(rpcsEl) rpcsEl.value='1';
+  const dirWt=document.getElementById('sc-direct-wt'); if(dirWt) dirWt.value='';
+  const dirPcs=document.getElementById('sc-direct-pcs'); if(dirPcs) dirPcs.value='1';
+  const reason=document.getElementById('sc-reason'); if(reason) reason.value='';
+
+  // Reset calc display
+  ['sc-calc-uwt','sc-calc-twt','sc-calc-val'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='—';});
+
+  // Set method to dims by default
+  setScrapMethod('dims');
+
+  document.getElementById('overlay-scrap').classList.add('open');
+};window.openScrap = function(id){
   const item = items().find(i=>i.id===id); if(!item) return;
   _scrapItemId = id; _scrapItem = item;
   const isRod = item.category==='ø';
@@ -2846,50 +2894,125 @@ window.scrapCalc = function(){
   document.getElementById('sc-calc-uwt').textContent = unitWt>0?unitWt.toFixed(4)+' kg':'—';
   document.getElementById('sc-calc-twt').textContent = totalWt>0?totalWt.toFixed(4)+' kg':'—';
   document.getElementById('sc-calc-val').textContent = val>0?'Rs '+val.toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g,','):'—';
+}
+
+// ── Scrap method toggle ───────────────────────────────────────────────
+window._scrapMethod = 'dims'; // 'dims' or 'direct'
+
+window.setScrapMethod = function(method){
+  window._scrapMethod = method;
+  const item = window._scrapItem;
+
+  // Toggle buttons
+  const dimBtn = document.getElementById('sc-method-dims');
+  const dirBtn = document.getElementById('sc-method-direct');
+  if(dimBtn){
+    dimBtn.style.background   = method==='dims' ? 'var(--red)' : 'var(--surface)';
+    dimBtn.style.color        = method==='dims' ? '#fff' : 'var(--text2)';
+    dimBtn.style.borderColor  = method==='dims' ? 'var(--red)' : 'var(--border2)';
+  }
+  if(dirBtn){
+    dirBtn.style.background   = method==='direct' ? 'var(--red)' : 'var(--surface)';
+    dirBtn.style.color        = method==='direct' ? '#fff' : 'var(--text2)';
+    dirBtn.style.borderColor  = method==='direct' ? 'var(--red)' : 'var(--border2)';
+  }
+
+  // Show/hide sections
+  const sheetDiv  = document.getElementById('scrap-dims-sheet');
+  const rodDiv    = document.getElementById('scrap-dims-rod');
+  const directDiv = document.getElementById('scrap-direct');
+
+  if(method === 'dims'){
+    if(directDiv) directDiv.style.display = 'none';
+    if(item){
+      if(sheetDiv) sheetDiv.style.display = item.formation==='Rod' ? 'none' : 'block';
+      if(rodDiv)   rodDiv.style.display   = item.formation==='Rod' ? 'block' : 'none';
+    }
+    scrapCalc();
+  } else {
+    if(sheetDiv) sheetDiv.style.display = 'none';
+    if(rodDiv)   rodDiv.style.display   = 'none';
+    if(directDiv) directDiv.style.display = 'block';
+    scrapCalcDirect();
+  }
 };
+
+// ── Direct weight calc ────────────────────────────────────────────────
+window.scrapCalcDirect = function(){
+  const item  = window._scrapItem;
+  if(!item) return;
+  const wt    = parseFloat(document.getElementById('sc-direct-wt')?.value) || 0;
+  const pcs   = parseInt(document.getElementById('sc-direct-pcs')?.value)  || 1;
+  const total = wt; // weight already entered directly
+  const val   = total * (item.priceKg || 0);
+
+  document.getElementById('sc-calc-uwt').textContent  = wt ? (wt/pcs).toFixed(3)+' kg/pc' : '—';
+  document.getElementById('sc-calc-twt').textContent  = wt ? total.toFixed(3)+' kg' : '—';
+  document.getElementById('sc-calc-val').textContent  = val ? 'Rs '+fmt(val) : '—';
+};
+
+;
 
 window.confirmScrap = async function(){
-  const reason = document.getElementById('sc-reason').value.trim();
-  if(!reason){showToast('Please enter a reason for scrapping');return;}
-  const item = items().find(i=>i.id===_scrapItemId); if(!item) return;
-  const isRod = item.category==='ø';
-  const rho = (window.MAT_DENSITY||{})[item.matSpec]||(item.formation==='Extrusion Profile'?1200:7860);
-  let unitWt=0, pcs=1;
-  if(isRod){
-    const D=+document.getElementById('sc-D')?.value||0, L=+document.getElementById('sc-RL')?.value||0;
-    pcs=+document.getElementById('sc-rpcs')?.value||1;
-    if(!D||!L){showToast('Enter diameter and length');return;}
-    unitWt=3.14*D*D*L*rho*1e-9/4;
+  const item   = window._scrapItem;
+  if(!item) return;
+  const reason = document.getElementById('sc-reason')?.value.trim();
+  if(!reason){ showToast('Please enter a reason for scrapping'); return; }
+
+  let totalWt = 0, pcs = 1, valueLost = 0;
+
+  if(window._scrapMethod === 'direct'){
+    // Direct weight entry
+    totalWt = parseFloat(document.getElementById('sc-direct-wt')?.value) || 0;
+    pcs     = parseInt(document.getElementById('sc-direct-pcs')?.value)  || 1;
+    if(!totalWt){ showToast('Please enter the scrap weight'); return; }
+    valueLost = totalWt * (item.priceKg || 0);
   } else {
-    const T=+document.getElementById('sc-T')?.value||0, L=+document.getElementById('sc-L')?.value||0, W=+document.getElementById('sc-W')?.value||0;
-    pcs=+document.getElementById('sc-pcs')?.value||1;
-    if(!T||!L||!W){showToast('Enter thickness, length, and width');return;}
-    unitWt=T*L*W*1e-9*rho;
+    // Dimension-based calculation
+    const isRod = item.formation === 'Rod';
+    if(isRod){
+      const D   = parseFloat(document.getElementById('sc-D')?.value)   || 0;
+      const L   = parseFloat(document.getElementById('sc-RL')?.value)  || 0;
+      pcs       = parseInt(document.getElementById('sc-rpcs')?.value)  || 1;
+      if(!D || !L){ showToast('Enter diameter and length'); return; }
+      const uwt = Math.PI/4 * Math.pow(D/1000,2) * (L/1000) * (item._density||7850);
+      totalWt   = uwt * pcs;
+    } else {
+      const T   = parseFloat(document.getElementById('sc-T')?.value)   || 0;
+      const Lv  = parseFloat(document.getElementById('sc-L')?.value)   || 0;
+      const W   = parseFloat(document.getElementById('sc-W')?.value)   || 0;
+      pcs       = parseInt(document.getElementById('sc-pcs')?.value)   || 1;
+      if(!T || !Lv || !W){ showToast('Enter all dimensions'); return; }
+      const uwt = (T/1000) * (Lv/1000) * (W/1000) * (item._density||7850);
+      totalWt   = uwt * pcs;
+    }
+    valueLost = totalWt * (item.priceKg || 0);
   }
-  if(unitWt<=0||pcs<1){showToast('Enter valid dimensions');return;}
-  if(pcs>item.qty){showToast(`Cannot scrap ${pcs} pcs — only ${item.qty} in stock`);return;}
 
-  const totalWt=unitWt*pcs, val=totalWt*(item.priceKg||0);
-  const note=`SCRAP | ${reason} | wt:${totalWt.toFixed(3)}kg | val:Rs${val.toFixed(0)}`;
-
-  // Record in scrap log (in-memory local mode)
-  const scrapEntry={
-    id:'scrap_'+Date.now(), itemId:_scrapItemId, itemName:item.name,
-    matSpec:item.matSpec, matType:item.matType, cat:item.cat,
-    pcs, unitWt:+unitWt.toFixed(6), totalWt:+totalWt.toFixed(4),
-    valueLost:+val.toFixed(2), priceKg:item.priceKg||0,
-    reason, user:window._currentUser?.username||'unknown',
-    ts:{toDate:()=>new Date()}
-  };
-  window._scrapLog.unshift(scrapEntry);
+  const note = 'SCRAP | '+reason+' | wt:'+totalWt.toFixed(3)+'kg | val:Rs'+Math.round(valueLost);
+  const delta = -pcs;
 
   try{
-    await window._db.stockAction(_scrapItemId, item, -pcs, 'SCRAP', note);
+    await window._db.stockAction(item.id, item, delta, 'SCRAP', note);
+    // Save scrap log entry
+    const scrapEntry = {
+      id:        'scrap_'+Date.now(),
+      itemId:    item.id,
+      itemName:  item.name,
+      cat:       item.cat||'',
+      pcs,
+      totalWt,
+      valueLost: Math.round(valueLost),
+      reason,
+      user:      window._currentUser?.username||'',
+    };
+    if(window._db.addScrapEntry){
+      await window._db.addScrapEntry(scrapEntry);
+    }
     closeDrawer('overlay-scrap');
-    renderScrap();
-    showToast(`${pcs} pcs (${totalWt.toFixed(3)} kg) scrapped — recorded ✓`);
+    showToast('Scrap recorded — '+pcs+' pc(s), '+totalWt.toFixed(3)+' kg');
   }catch(e){ showToast('Error: '+e.message); }
-};
+};;
 
 window.renderScrap = function(){
   const q=(document.getElementById('scrap-search')||{}).value?.toLowerCase()||'';
